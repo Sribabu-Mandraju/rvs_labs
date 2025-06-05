@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.landing {
+  position: absolute;
+  background: #262626;
+  box-sizing: border-box;
+  top: 2px;
+  left: 2px;
+  height: calc(100vh - 4px);
+  width: calc(100vw - 4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.logo {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  top: 20px;
+  left: 20px;
+}
+
+.contentSection {
+  width: 50vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 15%;
+  box-sizing: border-box;
+  gap: 15px;
+}
+
+/* Add responsive breakpoints */
+@media (max-width: 1150px) {
+  .landing {
+    flex-direction: column;
+  }
+  
+  .contentSection {
+    width: 100%;
+    flex: 1;
+  }
+}
