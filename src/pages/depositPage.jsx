@@ -2,7 +2,13 @@ import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { toast } from "react-toastify";
 import { useWallet } from "../context/WalletContext";
-import { FaSpinner, FaLock, FaUnlock, FaArrowLeft } from "react-icons/fa";
+import {
+  FaSpinner,
+  FaLock,
+  FaUnlock,
+  FaArrowLeft,
+  FaExternalLinkAlt,
+} from "react-icons/fa";
 import TimeLockNFTStakingABI from "../abis/stablz.json";
 import IERC20ABI from "../abis/ierc20.json";
 import { useNavigate } from "react-router-dom";
@@ -23,11 +29,20 @@ const DepositPage = () => {
   });
   const [usdcBalance, setUsdcBalance] = useState("0");
   const [allowance, setAllowance] = useState("0");
+  const [usdtAddress, setUsdtAddress] = useState("");
 
   useEffect(() => {
-    const fetchBalanceAndAllowance = async () => {
+    const fetchData = async () => {
       if (!account || !signer) return;
       try {
+        // Fetch USDT address from API
+        const response = await fetch(
+          "https://lock-nft.onrender.com/market/usdc"
+        );
+        const data = await response.json();
+        setUsdtAddress(data.usdc);
+
+        // Fetch balance and allowance
         const usdtContract = new ethers.Contract(
           USDT_ADDRESS,
           IERC20ABI,
@@ -40,10 +55,10 @@ const DepositPage = () => {
         setUsdcBalance(ethers.formatUnits(balance, 6));
         setAllowance(ethers.formatUnits(currentAllowance, 6));
       } catch (error) {
-        console.error("Error fetching balance:", error);
+        console.error("Error fetching data:", error);
       }
     };
-    fetchBalanceAndAllowance();
+    fetchData();
   }, [account, signer]);
 
   const handleDeposit = async () => {
@@ -274,6 +289,26 @@ const DepositPage = () => {
                           ? "20%"
                           : "30%"}
                       </span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-400">
+                        USDT Contract Address
+                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white text-sm break-all">
+                          {usdtAddress || "Loading..."}
+                        </span>
+                        {usdtAddress && (
+                          <a
+                            href={`https://sepolia.basescan.org/address/${usdtAddress}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-yellow-400 hover:text-yellow-300 ml-2 flex-shrink-0"
+                          >
+                            <FaExternalLinkAlt className="text-sm" />
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

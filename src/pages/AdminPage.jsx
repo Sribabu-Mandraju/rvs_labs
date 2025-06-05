@@ -24,7 +24,7 @@ const AdminPage = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [ethBalance, setEthBalance] = useState("0");
   const [usdtAmount, setUsdtAmount] = useState("");
-  const [usdcAddress, setUsdcAddress] = useState("");
+  const [usdtAddress, setUsdtAddress] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [txStatus, setTxStatus] = useState({
     status: "",
@@ -49,6 +49,17 @@ const AdminPage = () => {
         // Get total USDT deposited
         const total = await contract.totalDeposited();
         setTotalDeposited(ethers.formatUnits(total, 6));
+
+        // Fetch USDT address from API
+        try {
+          const response = await fetch(
+            "https://lock-nft.onrender.com/market/usdc"
+          );
+          const data = await response.json();
+          setUsdtAddress(data.usdc);
+        } catch (error) {
+          console.error("Error fetching USDT address:", error);
+        }
       } catch (err) {
         console.error("Error checking owner status:", err);
       }
@@ -212,14 +223,14 @@ const AdminPage = () => {
     }
   };
 
-  const handleSetUSDC = async () => {
+  const handleSetUSDT = async () => {
     if (!account || !signer) {
       toast.error("Please connect your wallet first.");
       return;
     }
 
-    if (!ethers.isAddress(usdcAddress)) {
-      toast.error("Please enter a valid USDC contract address.");
+    if (!ethers.isAddress(usdtAddress)) {
+      toast.error("Please enter a valid USDT contract address.");
       return;
     }
 
@@ -234,7 +245,7 @@ const AdminPage = () => {
         hash: "",
       });
 
-      const tx = await contract.setUSDT(usdcAddress);
+      const tx = await contract.setUSDT(usdtAddress);
       setTxStatus({
         status: "confirming",
         message: "Transaction submitted! Waiting for confirmation...",
@@ -258,16 +269,16 @@ const AdminPage = () => {
       await tx.wait();
       setTxStatus({
         status: "success",
-        message: "USDC address set successfully!",
+        message: "USDT address set successfully!",
         hash: tx.hash,
       });
-      toast.success("USDC address set successfully!");
+      toast.success("USDT address set successfully!");
 
       // Reset form
-      setUsdcAddress("");
+      setUsdtAddress("");
     } catch (err) {
-      console.error("Error setting USDC address:", err);
-      let errorMessage = "Failed to set USDC address";
+      console.error("Error setting USDT address:", err);
+      let errorMessage = "Failed to set USDT address";
       if (err.code === 4001) {
         errorMessage = "Transaction rejected by user";
       } else if (err.code === -32603) {
@@ -377,16 +388,16 @@ const AdminPage = () => {
               </div>
             </button>
             <button
-              onClick={() => setActiveTab("usdc")}
+              onClick={() => setActiveTab("setusdt")}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 ${
-                activeTab === "usdc"
+                activeTab === "setusdt"
                   ? "bg-yellow-500 text-black"
                   : "bg-gray-800 text-gray-400 hover:bg-gray-700"
               }`}
             >
               <div className="flex items-center justify-center">
                 <FaLink className="mr-2" />
-                Set USDC
+                Set USDT
               </div>
             </button>
           </div>
@@ -444,6 +455,30 @@ const AdminPage = () => {
                       {parseFloat(totalDeposited).toFixed(2)} USDT
                     </span>
                   </div>
+
+                  {/* Info Section */}
+                  <div className="bg-gray-900/50 rounded-lg p-4 mb-4">
+                    <h3 className="text-lg font-semibold text-yellow-400 mb-3">
+                      Contract Information
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">
+                          Current USDT Address
+                        </span>
+                        <span className="text-white break-all text-sm">
+                          {usdtAddress || "Not set"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">Total Deposited</span>
+                        <span className="text-white">
+                          {parseFloat(totalDeposited).toFixed(2)} USDT
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="relative mb-4">
                     <input
                       type="number"
@@ -479,31 +514,37 @@ const AdminPage = () => {
               </div>
             )}
 
-            {/* USDC Address Setting Tab */}
-            {activeTab === "usdc" && (
+            {/* USDT Address Setting Tab */}
+            {activeTab === "setusdt" && (
               <div className="space-y-4">
                 <div className="bg-gray-800/50 rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-4">
                     <FaLink className="text-yellow-400 text-xl" />
                     <h3 className="text-lg font-semibold text-white">
-                      Set USDC Contract Address
+                      Set USDT Contract Address
                     </h3>
                   </div>
                   <div className="relative mb-4">
                     <input
                       type="text"
-                      value={usdcAddress}
-                      onChange={(e) => setUsdcAddress(e.target.value)}
-                      placeholder="Enter USDC contract address"
+                      value={usdtAddress}
+                      onChange={(e) => setUsdtAddress(e.target.value)}
+                      placeholder="Enter USDT contract address"
                       className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
                       disabled={isSubmitting}
                     />
                   </div>
+                  <div className="text-sm text-gray-400 mb-4">
+                    Current USDT Address:{" "}
+                    <span className="text-yellow-400 break-all">
+                      {usdtAddress || "Not set"}
+                    </span>
+                  </div>
                   <button
-                    onClick={handleSetUSDC}
-                    disabled={isSubmitting || !usdcAddress}
+                    onClick={handleSetUSDT}
+                    disabled={isSubmitting || !usdtAddress}
                     className={`w-full py-2 px-4 rounded-lg font-medium transition-all duration-300 text-sm ${
-                      isSubmitting || !usdcAddress
+                      isSubmitting || !usdtAddress
                         ? "bg-gray-700 text-gray-400 cursor-not-allowed"
                         : "bg-gradient-to-r from-yellow-400 to-yellow-500 text-black hover:from-yellow-500 hover:to-yellow-600 transform hover:scale-[1.02]"
                     }`}
@@ -514,7 +555,7 @@ const AdminPage = () => {
                         Processing...
                       </div>
                     ) : (
-                      "Set USDC Address"
+                      "Set USDT Address"
                     )}
                   </button>
                 </div>
