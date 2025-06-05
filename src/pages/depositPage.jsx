@@ -74,6 +74,26 @@ const DepositPage = () => {
     fetchData();
   }, [account, signer]);
 
+  useEffect(() => {
+    const fetchUsdtAddress = async () => {
+      try {
+        const response = await fetch(USDT_API_URL);
+        if (!response.ok) {
+          throw new Error("Failed to fetch USDT address");
+        }
+        const data = await response.json();
+        if (!data.usdt) {
+          throw new Error("Invalid USDT address data");
+        }
+        setUsdtAddress(data.usdt);
+      } catch (error) {
+        console.error("Error fetching USDT address:", error);
+        toast.error("Failed to load USDT contract address.");
+      }
+    };
+    fetchUsdtAddress();
+  }, []); // Empty dependency array means this runs once on mount
+
   const handleDeposit = async () => {
     if (!account || !signer || !usdtAddress) {
       toast.error("Please connect your wallet first.");
