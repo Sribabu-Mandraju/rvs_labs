@@ -202,7 +202,7 @@ const Landing = () => {
 
         {/* Right Content - Cards Grid */}
         <div className="flex-1 max-w-2xl w-full flex-shrink-0">
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+          <div className="grid grid-cols-2 gap-3 lg:gap-4">
             {gridCards.map((card) => {
               const IconComponent = card.icon;
               return (
