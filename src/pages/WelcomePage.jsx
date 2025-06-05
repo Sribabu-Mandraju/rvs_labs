@@ -40,7 +40,7 @@ const Landing = () => {
   const navigationLinks = [
     { name: "Home", path: "/", icon: FaHome },
     { name: "Deposit", path: "/deposit", icon: FaCoins },
-    { name: "Redeem", path: "/redeem", icon: FaUndo },
+    // { name: "Redeem", path: "/redeem", icon: FaUndo },
     { name: "History", path: "/user-deposits", icon: FaHistory },
     { name: "Admin", path: "/admin", icon: FaShieldAlt },
   ];
@@ -52,28 +52,28 @@ const Landing = () => {
       route: "/deposit",
       description: "Stake your tokens and earn rewards",
     },
-    {
-      title: "REDEEM",
-      icon: FaUndo,
-      route: "/redeem",
-      description: "Withdraw your staked tokens",
-    },
+    // {
+    //   title: "REDEEM",
+    //   icon: FaUndo,
+    //   route: "/redeem",
+    //   description: "Withdraw your staked tokens",
+    // },
     {
       title: "HISTORY",
       icon: FaHistory,
       route: "/user-deposits",
       description: "View your deposit history",
     },
-    {
-      title: "DEVELOPMENT",
-      icon: FaCode,
-      route: "/deposit",
-      description: "Custom development services",
-    },
+    // {
+    //   title: "DEVELOPMENT",
+    //   icon: FaCode,
+    //   route: "/deposit",
+    //   description: "Custom development services",
+    // },
     {
       title: "LICENSE KEYS",
       icon: FaKey,
-      route: "/deposit",
+      route: "/licence",
       description: "Software licensing solutions",
     },
     {

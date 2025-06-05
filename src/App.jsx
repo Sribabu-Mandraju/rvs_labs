@@ -9,6 +9,7 @@ import RedeemPage from "./pages/RedeemPage";
 import UserDeposits from "./pages/UserDeposits";
 import SetROIPage from "./pages/SetROIPage";
 import AdminPage from "./pages/AdminPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -24,6 +25,7 @@ const App = () => {
           <Route path="/user-deposits" element={<UserDeposits />} />
           <Route path="/set-roi" element={<SetROIPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/*" element={<NotFoundPage />} />
         </Routes>
       </Router>
       <ToastContainer
