@@ -14,7 +14,7 @@ import IERC20ABI from "../abis/ierc20.json";
 import { useNavigate } from "react-router-dom";
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_STABLEZ_CONTRACT;
-const USDT_API_URL = "http://localhost:4000/market/usdt";
+const USDT_API_URL = "https://locknft.onrender.com/market/usdt";
 
 const DepositPage = () => {
   const navigate = useNavigate();
@@ -126,7 +126,7 @@ const DepositPage = () => {
           await approveTx.wait();
           toast.success("Approval successful! You can now deposit.");
 
-          // Update allowance after approval  
+          // Update allowance after approval
           const newAllowance = await usdtContract.allowance(
             account,
             CONTRACT_ADDRESS
@@ -324,7 +324,8 @@ const DepositPage = () => {
                         </span>
                         {usdtAddress && (
                           <a
-                            href={`https://sepolia.basescan.org/address/${usdtAddress}`}
+                            // href={`https://sepolia.basescan.org/address/${usdtAddress}`}
+                            href={`https://basescan.org/address/${usdtAddress}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-yellow-400 hover:text-yellow-300 ml-2 flex-shrink-0"
