@@ -14,7 +14,7 @@ import IERC20ABI from "../abis/ierc20.json";
 import { useNavigate } from "react-router-dom";
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_STABLEZ_CONTRACT;
-const USDT_ADDRESS = import.meta.env.VITE_USDC;
+const USDT_ADDRESS = import.meta.env.VITE_usdt;
 
 const DepositPage = () => {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ const DepositPage = () => {
     message: "",
     hash: "",
   });
-  const [usdcBalance, setUsdcBalance] = useState("0");
+  const [usdtBalance, setusdtBalance] = useState("0");
   const [allowance, setAllowance] = useState("0");
   const [usdtAddress, setUsdtAddress] = useState("");
 
@@ -37,10 +37,16 @@ const DepositPage = () => {
       try {
         // Fetch USDT address from API
         const response = await fetch(
-          "https://lock-nft.onrender.com/market/usdc"
+          "https://locknft.onrender.com/market/usdt"
         );
+        if (!response.ok) {
+          throw new Error("Failed to fetch USDT address");
+        }
         const data = await response.json();
-        setUsdtAddress(data.usdc);
+        if (!data.usdt) {
+          throw new Error("Invalid USDT address data");
+        }
+        setUsdtAddress(data.usdt);
 
         // Fetch balance and allowance
         const usdtContract = new ethers.Contract(
@@ -52,10 +58,16 @@ const DepositPage = () => {
           usdtContract.balanceOf(account),
           usdtContract.allowance(account, CONTRACT_ADDRESS),
         ]);
-        setUsdcBalance(ethers.formatUnits(balance, 6));
+        setusdtBalance(ethers.formatUnits(balance, 6));
         setAllowance(ethers.formatUnits(currentAllowance, 6));
       } catch (error) {
         console.error("Error fetching data:", error);
+        if (
+          error.message === "Failed to fetch USDT address" ||
+          error.message === "Invalid USDT address data"
+        ) {
+          toast.error(error.message);
+        }
       }
     };
     fetchData();
@@ -84,7 +96,7 @@ const DepositPage = () => {
 
       const balance = await usdtContract.balanceOf(account);
       if (balance < amountInWei) {
-        toast.error("Insufficient USDC balance.");
+        toast.error("Insufficient usdt balance.");
         return;
       }
 
@@ -95,7 +107,7 @@ const DepositPage = () => {
       if (currentAllowance < amountInWei) {
         setTxStatus({
           status: "pending",
-          message: "Approving USDC spending...",
+          message: "Approving usdt spending...",
           hash: "",
         });
         try {
@@ -148,7 +160,7 @@ const DepositPage = () => {
         usdtContract.balanceOf(account),
         usdtContract.allowance(account, CONTRACT_ADDRESS),
       ]);
-      setUsdcBalance(ethers.formatUnits(newBalance, 6));
+      setusdtBalance(ethers.formatUnits(newBalance, 6));
       setAllowance(ethers.formatUnits(newAllowance, 6));
     } catch (err) {
       console.error("Error in deposit process:", err);
@@ -192,10 +204,10 @@ const DepositPage = () => {
         <div className="w-full max-w-4xl">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-yellow-400 mb-2">
-              Stake Your USDC
+              Stake Your USDT
             </h1>
             <p className="text-gray-400">
-              Lock your USDC and earn rewards over time
+              Lock your usdt and earn rewards over time
             </p>
           </div>
 
@@ -212,16 +224,16 @@ const DepositPage = () => {
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      placeholder="Enter USDC amount"
+                      placeholder="Enter usdt amount"
                       className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
                       disabled={isSubmitting}
                     />
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                      USDC
+                      usdt
                     </div>
                   </div>
                   <p className="mt-2 text-sm text-gray-500">
-                    Available Balance: {usdcBalance} USDC
+                    Available Balance: {usdtBalance} usdt
                   </p>
                 </div>
 
@@ -272,7 +284,7 @@ const DepositPage = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-400">Current Allowance</span>
-                      <span className="text-white">{allowance} USDC</span>
+                      <span className="text-white">{allowance} usdt</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-400">Selected Period</span>

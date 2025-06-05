@@ -156,7 +156,7 @@ const RedeemPage = () => {
               Redeem Your Stake
             </h1>
             <p className="text-gray-400 text-lg">
-              Unlock your staked USDC and claim your rewards
+              Unlock your staked usdt and claim your rewards
             </p>
           </div>
 
@@ -269,7 +269,7 @@ const RedeemPage = () => {
                             Amount
                           </div>
                           <div className="text-xl font-semibold text-white">
-                            {depositInfo.amount} USDC
+                            {depositInfo.amount} usdt
                           </div>
                         </div>
                         <div className="bg-gray-900/50 rounded-lg p-4">

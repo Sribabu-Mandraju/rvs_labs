@@ -15,7 +15,7 @@ import {
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "https://lock-nft.onrender.com/market/owned-nfts";
+const API_URL = "https://locknft.onrender.com/market/owned-nfts";
 
 const UserDeposits = () => {
   const navigate = useNavigate();
@@ -115,7 +115,7 @@ const UserDeposits = () => {
               Your Deposits
             </h1>
             <p className="text-gray-400">
-              View and manage your staked USDC positions
+              View and manage your staked usdt positions
             </p>
           </div>
 
@@ -177,7 +177,7 @@ const UserDeposits = () => {
                             <span>Amount</span>
                           </span>
                           <span className="text-white font-semibold">
-                            {deposit.amount} USDC
+                            {deposit.amount} usdt
                           </span>
                         </div>
                       </div>

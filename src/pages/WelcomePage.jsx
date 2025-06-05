@@ -21,7 +21,12 @@ import WalletModal from "../components/WalletModal";
 const Landing = () => {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { account, disconnectWallet, isConnected } = useWallet();
+  const {
+    account,
+    disconnectWallet,
+    isConnected,
+    setUsdtAddress,
+  } = useWallet();
   const navigate = useNavigate();
 
   const handleConnectWallet = () => {
