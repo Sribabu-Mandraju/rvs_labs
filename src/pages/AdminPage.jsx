@@ -52,9 +52,7 @@ const AdminPage = () => {
 
         // Fetch USDT address from API
         try {
-          const response = await fetch(
-            "https://locknft.onrender.com/market/usdt"
-          );
+          const response = await fetch("http://localhost:4000/market/usdt");
           const data = await response.json();
           setUsdtAddress(data.usdt);
         } catch (error) {

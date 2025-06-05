@@ -14,7 +14,7 @@ import IERC20ABI from "../abis/ierc20.json";
 import { useNavigate } from "react-router-dom";
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_STABLEZ_CONTRACT;
-const USDT_API_URL = "https://locknft.onrender.com/market/usdt";
+const USDT_API_URL = "http://localhost:4000/market/usdt";
 
 const DepositPage = () => {
   const navigate = useNavigate();
@@ -116,7 +116,7 @@ const DepositPage = () => {
           // Request unlimited approval
           const approveTx = await usdtContract.approve(
             CONTRACT_ADDRESS,
-            ethers.MaxUint256
+            amountInWei
           );
           setTxStatus({
             status: "confirming",
@@ -126,7 +126,7 @@ const DepositPage = () => {
           await approveTx.wait();
           toast.success("Approval successful! You can now deposit.");
 
-          // Update allowance after approval
+          // Update allowance after approval  
           const newAllowance = await usdtContract.allowance(
             account,
             CONTRACT_ADDRESS
