@@ -27,6 +27,7 @@ const DepositPage = () => {
     message: "",
     hash: "",
   });
+  //
   const [usdtBalance, setusdtBalance] = useState("0");
   const [allowance, setAllowance] = useState("0");
   const [usdtAddress, setUsdtAddress] = useState("");
