@@ -12,16 +12,25 @@ import {
   FaExternalLinkAlt,
   FaSpinner,
   FaArrowLeft,
+  FaUndo,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import TimeLockNFTStakingABI from "../abis/stablz.json";
 
 const API_URL = "https://locknft.onrender.com/market/owned-nfts";
+const CONTRACT_ADDRESS = import.meta.env.VITE_STABLEZ_CONTRACT;
 
 const UserDeposits = () => {
   const navigate = useNavigate();
-  const { account } = useWallet();
+  const { account, signer } = useWallet();
   const [deposits, setDeposits] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [redeemingTokenId, setRedeemingTokenId] = useState(null);
+  const [txStatus, setTxStatus] = useState({
+    status: "",
+    message: "",
+    hash: "",
+  });
 
   useEffect(() => {
     const fetchDeposits = async () => {
@@ -55,6 +64,94 @@ const UserDeposits = () => {
 
     fetchDeposits();
   }, [account]);
+
+  const handleRedeem = async (tokenId) => {
+    if (!account || !signer) {
+      toast.error("Please connect your wallet first.");
+      return;
+    }
+
+    try {
+      setRedeemingTokenId(tokenId);
+      const stakingContract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        TimeLockNFTStakingABI,
+        signer
+      );
+
+      setTxStatus({
+        status: "pending",
+        message: "Preparing transaction...",
+        hash: "",
+      });
+
+      const tx = await stakingContract.redeem(tokenId);
+      setTxStatus({
+        status: "confirming",
+        message: "Transaction submitted! Waiting for confirmation...",
+        hash: tx.hash,
+      });
+
+      toast.info(
+        <div>
+          <p>Transaction submitted!</p>
+          <a
+            href={`https://sepolia.basescan.org/tx/${tx.hash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-yellow-400 hover:text-yellow-300"
+          >
+            View on BaseScan
+          </a>
+        </div>
+      );
+
+      await tx.wait();
+      setTxStatus({
+        status: "success",
+        message: "Redeem successful!",
+        hash: tx.hash,
+      });
+      toast.success("Redeem successful!");
+
+      // Refresh deposits after successful redeem
+      const response = await fetch(`${API_URL}?address=${account}`);
+      const data = await response.json();
+      const updatedDeposits = data.nfts.map((nft) => ({
+        tokenId: nft.tokenId,
+        amount: ethers.formatUnits(nft.deposit.amount, 6),
+        startTimestamp: Number(nft.deposit.startTimestamp),
+        unlockTimestamp: Number(nft.deposit.unlockTimestamp),
+        isLocked: nft.isLocked,
+        periodMonths: nft.deposit.periodMonths,
+        originalMinter: nft.deposit.originalMinter,
+        tokenURI: nft.tokenURI,
+        timeRemaining: Number(nft.timeRemaining),
+      }));
+      setDeposits(updatedDeposits);
+    } catch (err) {
+      console.error("Error redeeming:", err);
+      const errorMessage =
+        err.code === 4001
+          ? "Transaction rejected by user"
+          : err.code === -32603
+          ? "Transaction failed: Insufficient gas or invalid parameters"
+          : err.message.includes("user rejected")
+          ? "Transaction rejected by user"
+          : err.message.includes("insufficient funds")
+          ? "Insufficient funds for gas"
+          : "Failed to redeem";
+
+      setTxStatus({
+        status: "error",
+        message: errorMessage,
+        hash: err.transaction?.hash || "",
+      });
+      toast.error(errorMessage);
+    } finally {
+      setRedeemingTokenId(null);
+    }
+  };
 
   const formatDate = (timestamp) => {
     return new Date(Number(timestamp) * 1000).toLocaleDateString("en-US", {
@@ -115,7 +212,7 @@ const UserDeposits = () => {
               Your Deposits
             </h1>
             <p className="text-gray-400">
-              View and manage your staked usdt positions
+              View and manage your staked USDT positions
             </p>
           </div>
 
@@ -132,6 +229,7 @@ const UserDeposits = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {deposits.map((deposit) => {
                 const tokenData = decodeTokenURI(deposit.tokenURI);
+                const isUnlocked = !deposit.isLocked;
                 return (
                   <div
                     key={deposit.tokenId}
@@ -177,7 +275,7 @@ const UserDeposits = () => {
                             <span>Amount</span>
                           </span>
                           <span className="text-white font-semibold">
-                            {deposit.amount} usdt
+                            {deposit.amount} USDT
                           </span>
                         </div>
                       </div>
@@ -247,15 +345,42 @@ const UserDeposits = () => {
                         </div>
                       </div>
 
-                      <a
-                        href={deposit.tokenURI}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center space-x-1.5 w-full bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 p-2 rounded-lg transition-colors duration-300 text-xs"
-                      >
-                        <FaExternalLinkAlt className="text-xs" />
-                        <span>View Details</span>
-                      </a>
+                      <div className="flex space-x-2">
+                        <a
+                          href={deposit.tokenURI}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center space-x-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 p-2 rounded-lg transition-colors duration-300 text-xs"
+                        >
+                          <FaExternalLinkAlt className="text-xs" />
+                          <span>View Details</span>
+                        </a>
+
+                        <button
+                          onClick={() => handleRedeem(deposit.tokenId)}
+                          disabled={
+                            redeemingTokenId === deposit.tokenId ||
+                            deposit.isLocked
+                          }
+                          className={`flex-1 flex items-center justify-center space-x-1.5 p-2 rounded-lg transition-colors duration-300 text-xs ${
+                            deposit.isLocked
+                              ? "bg-gray-700/50 text-gray-500 cursor-not-allowed"
+                              : "bg-green-500/10 hover:bg-green-500/20 text-green-400"
+                          }`}
+                        >
+                          {redeemingTokenId === deposit.tokenId ? (
+                            <>
+                              <FaSpinner className="animate-spin text-xs" />
+                              <span>Redeeming...</span>
+                            </>
+                          ) : (
+                            <>
+                              <FaUndo className="text-xs" />
+                              <span>Redeem</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
 
                       {tokenData && (
                         <div className="text-xs text-gray-400 bg-gray-800/50 p-2 rounded-lg">
@@ -268,6 +393,53 @@ const UserDeposits = () => {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Transaction Status */}
+          {txStatus.status && (
+            <div
+              className={`fixed bottom-4 right-4 p-4 rounded-lg max-w-md ${
+                txStatus.status === "error"
+                  ? "bg-red-500/10 border border-red-500/20"
+                  : txStatus.status === "success"
+                  ? "bg-green-500/10 border border-green-500/20"
+                  : "bg-yellow-500/10 border border-yellow-500/20"
+              }`}
+            >
+              <div className="flex items-start space-x-3">
+                {txStatus.status === "pending" ||
+                txStatus.status === "confirming" ? (
+                  <FaSpinner className="animate-spin text-yellow-400 mt-1" />
+                ) : txStatus.status === "success" ? (
+                  <FaLock className="text-green-400 mt-1" />
+                ) : (
+                  <FaUnlock className="text-red-400 mt-1" />
+                )}
+                <div>
+                  <p
+                    className={`text-sm ${
+                      txStatus.status === "error"
+                        ? "text-red-400"
+                        : txStatus.status === "success"
+                        ? "text-green-400"
+                        : "text-yellow-400"
+                    }`}
+                  >
+                    {txStatus.message}
+                  </p>
+                  {txStatus.hash && (
+                    <a
+                      href={`https://sepolia.basescan.org/tx/${txStatus.hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-yellow-400 hover:text-yellow-300 text-xs mt-1 block"
+                    >
+                      View on BaseScan
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

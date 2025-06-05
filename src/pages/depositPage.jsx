@@ -14,7 +14,7 @@ import IERC20ABI from "../abis/ierc20.json";
 import { useNavigate } from "react-router-dom";
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_STABLEZ_CONTRACT;
-const USDT_ADDRESS = import.meta.env.VITE_usdt;
+const USDT_API_URL = "https://locknft.onrender.com/market/usdt";
 
 const DepositPage = () => {
   const navigate = useNavigate();
@@ -30,15 +30,15 @@ const DepositPage = () => {
   const [usdtBalance, setusdtBalance] = useState("0");
   const [allowance, setAllowance] = useState("0");
   const [usdtAddress, setUsdtAddress] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       if (!account || !signer) return;
       try {
+        setIsLoading(true);
         // Fetch USDT address from API
-        const response = await fetch(
-          "https://locknft.onrender.com/market/usdt"
-        );
+        const response = await fetch(USDT_API_URL);
         if (!response.ok) {
           throw new Error("Failed to fetch USDT address");
         }
@@ -48,12 +48,10 @@ const DepositPage = () => {
         }
         setUsdtAddress(data.usdt);
 
+        // Create USDT contract with fetched address
+        const usdtContract = new ethers.Contract(data.usdt, IERC20ABI, signer);
+
         // Fetch balance and allowance
-        const usdtContract = new ethers.Contract(
-          USDT_ADDRESS,
-          IERC20ABI,
-          signer
-        );
         const [balance, currentAllowance] = await Promise.all([
           usdtContract.balanceOf(account),
           usdtContract.allowance(account, CONTRACT_ADDRESS),
@@ -68,13 +66,15 @@ const DepositPage = () => {
         ) {
           toast.error(error.message);
         }
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchData();
   }, [account, signer]);
 
   const handleDeposit = async () => {
-    if (!account || !signer) {
+    if (!account || !signer || !usdtAddress) {
       toast.error("Please connect your wallet first.");
       return;
     }
@@ -92,11 +92,11 @@ const DepositPage = () => {
         TimeLockNFTStakingABI,
         signer
       );
-      const usdtContract = new ethers.Contract(USDT_ADDRESS, IERC20ABI, signer);
+      const usdtContract = new ethers.Contract(usdtAddress, IERC20ABI, signer);
 
       const balance = await usdtContract.balanceOf(account);
       if (balance < amountInWei) {
-        toast.error("Insufficient usdt balance.");
+        toast.error("Insufficient USDT balance.");
         return;
       }
 
@@ -104,20 +104,19 @@ const DepositPage = () => {
         account,
         CONTRACT_ADDRESS
       );
+
+      // If allowance is 0 or less than amount, request approval first
       if (currentAllowance < amountInWei) {
         setTxStatus({
           status: "pending",
-          message: "Approving usdt spending...",
+          message: "Approving USDT spending...",
           hash: "",
         });
         try {
-          // First reset the allowance to 0
-          await usdtContract.approve(CONTRACT_ADDRESS, 0);
-
-          // Then approve the exact amount needed
+          // Request unlimited approval
           const approveTx = await usdtContract.approve(
             CONTRACT_ADDRESS,
-            amountInWei
+            ethers.MaxUint256
           );
           setTxStatus({
             status: "confirming",
@@ -125,12 +124,21 @@ const DepositPage = () => {
             hash: approveTx.hash,
           });
           await approveTx.wait();
-          toast.success("Approval successful! Proceeding with deposit...");
+          toast.success("Approval successful! You can now deposit.");
+
+          // Update allowance after approval
+          const newAllowance = await usdtContract.allowance(
+            account,
+            CONTRACT_ADDRESS
+          );
+          setAllowance(ethers.formatUnits(newAllowance, 6));
+          return;
         } catch (err) {
           throw new Error("Approval failed: " + err.message);
         }
       }
 
+      // Proceed with deposit if allowance is sufficient
       setTxStatus({
         status: "pending",
         message: "Preparing deposit transaction...",
@@ -259,6 +267,8 @@ const DepositPage = () => {
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 ${
                     isSubmitting || !amount
                       ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                      : parseFloat(allowance) < parseFloat(amount)
+                      ? "bg-blue-500 hover:bg-blue-600 text-white"
                       : "bg-gradient-to-r from-yellow-400 to-yellow-500 text-black hover:from-yellow-500 hover:to-yellow-600 transform hover:scale-105"
                   }`}
                 >
@@ -269,6 +279,8 @@ const DepositPage = () => {
                         ? "Approving..."
                         : "Processing..."}
                     </div>
+                  ) : parseFloat(allowance) < parseFloat(amount) ? (
+                    "Approve USDT"
                   ) : (
                     "Deposit"
                   )}
