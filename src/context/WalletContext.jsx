@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { ethers } from "ethers";
+import CoinbaseWalletSDK from "@coinbase/wallet-sdk";
 import { toast } from "react-toastify";
+import {getCurrentNetwork} from "../config/contract.config.js"
 
 const WalletContext = createContext();
 
@@ -20,6 +22,13 @@ export const WalletProvider = ({ children }) => {
   const [walletType, setWalletType] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+
+  // Initialize Coinbase Wallet SDK
+  const coinbaseWallet = new CoinbaseWalletSDK({
+    appName: "Your App Name", // Replace with your app's name
+    appLogoUrl: "https://your-app-logo-url.com/logo.png", // Replace with your app's logo URL (optional)
+    darkMode: true,
+  });
 
   // Initialize wallet connection
   useEffect(() => {
@@ -103,41 +112,83 @@ export const WalletProvider = ({ children }) => {
     }
   };
 
+  const switchNetwork = async (chainId) => {
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: `0x${chainId.toString(16)}` }],
+      });
+    } catch (error) {
+      if (error.code === 4902) {
+        // Network not added, add it
+        const network = getCurrentNetwork();
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: `0x${chainId.toString(16)}`,
+              chainName: network.name,
+              rpcUrls: [network.rpcUrl],
+              nativeCurrency: {
+                name: "Ether",
+                symbol: "ETH",
+                decimals: 18,
+              },
+              blockExplorerUrls: [network.chain.blockExplorers?.default?.url],
+            },
+          ],
+        });
+      } else {
+        throw error;
+      }
+    }
+  };
+
   const connectWallet = async (walletType) => {
     try {
       setIsConnecting(true);
-      let provider;
+      let ethersProvider;
+
+      const { rpcUrl, chain } = getCurrentNetwork(); // Get current network details
 
       if (walletType === "metamask") {
         if (!window.ethereum || !window.ethereum.isMetaMask) {
           toast.error("Please install MetaMask!");
           return;
         }
-        provider = new ethers.BrowserProvider(window.ethereum);
+        ethersProvider = new ethers.BrowserProvider(window.ethereum);
         setWalletType("metamask");
       } else if (walletType === "coinbase") {
-        if (!window.ethereum || !window.ethereum.isCoinbaseWallet) {
-          window.open("https://wallet.coinbase.com/");
+        try {
+          const provider = coinbaseWallet.makeWeb3Provider(rpcUrl, chain.id);
+          ethersProvider = new ethers.BrowserProvider(provider);
+          setWalletType("coinbase");
+        } catch (sdkError) {
+          console.error("Coinbase Wallet SDK error:", sdkError);
+          toast.error("Failed to initialize Coinbase Wallet. Please try again.");
           return;
         }
-        provider = new ethers.BrowserProvider(window.ethereum);
-        setWalletType("coinbase");
+      } else {
+        throw new Error("Unsupported wallet type");
       }
 
       // Request account access
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
+      const accounts = await ethersProvider.send("eth_requestAccounts", []);
 
       if (accounts.length === 0) {
         throw new Error("No accounts found");
       }
 
-      const signer = await provider.getSigner();
-      const network = await provider.getNetwork();
+      const signer = await ethersProvider.getSigner();
+      const network = await ethersProvider.getNetwork();
+
+      // Ensure the wallet is on the correct network
+      if (Number(network.chainId) !== chain.id) {
+        await switchNetwork(chain.id);
+      }
 
       setAccount(accounts[0]);
-      setProvider(provider);
+      setProvider(ethersProvider);
       setSigner(signer);
       setChainId(network.chainId);
       setIsConnected(true);

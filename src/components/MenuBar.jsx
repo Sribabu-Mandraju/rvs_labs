@@ -13,13 +13,10 @@ import {
   FaCog,
   FaInfoCircle,
 } from "react-icons/fa";
-import { useWallet } from "../context/WalletContext";
-import WalletModal from "./WalletModal";
+import WalletConnect from "./WalletConnect";
 
 const MenuBar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const { account, disconnectWallet, isConnected } = useWallet();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -49,10 +46,6 @@ const MenuBar = () => {
     { name: "Admin", icon: FaCog, path: "/admin" },
     { name: "About", icon: FaInfoCircle, path: "/about" },
   ];
-
-  const handleConnectWallet = () => {
-    setIsWalletModalOpen(true);
-  };
 
   return (
     <>
@@ -111,28 +104,12 @@ const MenuBar = () => {
             </ul>
           </nav>
 
-          {/* Wallet Button */}
+          {/* Wallet Connect */}
           <div className="absolute bottom-4 left-4 right-4">
-            <button
-              onClick={isConnected ? disconnectWallet : handleConnectWallet}
-              className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-yellow-400/25 flex items-center justify-center space-x-2"
-            >
-              <FaWallet className="text-base" />
-              <span>
-                {isConnected && account
-                  ? `${account.slice(0, 6)}...${account.slice(-4)}`
-                  : "Connect Wallet"}
-              </span>
-            </button>
+            <WalletConnect />
           </div>
         </div>
       </div>
-
-      {/* Wallet Modal */}
-      <WalletModal
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
-      />
     </>
   );
 };

@@ -16,7 +16,7 @@ import {
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useWallet } from "../context/WalletContext";
-import WalletModal from "../components/WalletModal";
+import WalletConnect from "../components/WalletConnect";
 
 const Landing = () => {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
@@ -126,17 +126,7 @@ const Landing = () => {
         {/* Mobile Menu Button & Wallet */}
         <div className="flex items-center space-x-3">
           {/* Connect Wallet Button */}
-          <button
-            onClick={isConnected ? disconnectWallet : handleConnectWallet}
-            className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold py-2 px-3 lg:px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-yellow-400/25 flex items-center space-x-2 text-xs lg:text-sm"
-          >
-            <FaWallet className="text-sm" />
-            <span className="hidden sm:inline">
-              {isConnected && account
-                ? `${account.slice(0, 6)}...${account.slice(-4)}`
-                : "Connect Wallet"}
-            </span>
-          </button>
+         <WalletConnect />
 
           {/* Mobile Menu Toggle */}
           <button
@@ -242,10 +232,7 @@ const Landing = () => {
       <div className="absolute bottom-1/4 right-0 w-48 h-48 lg:w-72 lg:h-72 bg-yellow-400/3 rounded-full blur-3xl transform translate-x-24 lg:translate-x-36 pointer-events-none"></div>
 
       {/* Wallet Modal */}
-      <WalletModal
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
-      />
+     {/* <WalletConnect /> */}
     </div>
   );
 };
