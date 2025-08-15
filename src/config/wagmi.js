@@ -55,7 +55,7 @@ export const wagmiConfig = createConfig({
 createWeb3Modal({
   wagmiConfig,
   projectId,
-  defaultChain: base, // Default to Base Sepolia for testing
+  defaultChain: baseSepolia, // Default to Base Sepolia for testing
   enableAnalytics: true, // Optional: enable analytics
   // chains,
   themeMode: "dark",

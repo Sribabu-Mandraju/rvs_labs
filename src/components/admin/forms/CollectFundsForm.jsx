@@ -1,0 +1,169 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { toast } from "react-toastify";
+import { FaDownload, FaSpinner, FaExclamationTriangle } from "react-icons/fa";
+import { useCollectTokensNuclear } from "../../../interactions/StableZ_interactions";
+import { useTokenMetadata } from "../../../interactions/StableZ_interactions";
+
+const CollectFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
+  const [collectType, setCollectType] = useState("token");
+  const [selectedToken, setSelectedToken] = useState("");
+  const [amount, setAmount] = useState("");
+  const {
+    collectTokensNuclear,
+    isPending,
+    isConfirming,
+    isConfirmed,
+    error,
+  } = useCollectTokensNuclear();
+
+  // Fetch token metadata using custom hook
+  const tokenMetadata = useTokenMetadata(allowedTokens, chainId);
+
+  // Memoize token options for dropdown
+  const tokenOptions = useMemo(() => {
+    if (!allowedTokens || !Array.isArray(allowedTokens)) {
+      return [];
+    }
+    return allowedTokens.map((token) => ({
+      address: token,
+      name: tokenMetadata[token]?.name || "Loading...",
+    }));
+  }, [allowedTokens, tokenMetadata]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (collectType === "token") {
+      if (!selectedToken) {
+        toast.error("Please select a token", {
+          position: "bottom-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: "dark",
+        });
+        return;
+      }
+
+      if (!amount || Number.parseFloat(amount) <= 0) {
+        toast.error("Please enter a valid amount", {
+          position: "bottom-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: "dark",
+        });
+        return;
+      }
+
+      try {
+        // Get token decimals for the selected token
+        const decimals = tokenMetadata[selectedToken]?.decimals || 18;
+        // Convert amount to wei using token-specific decimals
+        const amountInWei = (BigInt(Math.floor(Number(amount) * 10 ** decimals))).toString();
+
+        await collectTokensNuclear(selectedToken, amountInWei);
+        setSelectedToken("");
+        setAmount("");
+        onSuccess();
+      } catch (err) {
+        // Error handling is managed by the hook's toast notifications
+        console.error("Error collecting tokens:", err);
+      }
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {/* <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3">
+        <div className="flex items-center text-red-400 mb-2">
+          <FaExclamationTriangle className="mr-2" />
+          <span className="font-medium text-sm">Warning</span>
+        </div>
+        <p className="text-red-300 text-xs">
+          These are emergency functions. Use with caution as they directly withdraw funds from the contract.
+        </p>
+      </div> */}
+
+      <div>
+        <label className="block text-gray-300 text-xs font-medium mb-1">Collection Type</label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setCollectType("token")}
+            className={`px-3 py-1.5 rounded-lg font-medium transition-colors text-sm ${
+              collectType === "token" ? "bg-red-500 text-white" : "bg-gray-800 text-gray-400 hover:text-white"
+            }`}
+          >
+            Collect Tokens
+          </button>
+        </div>
+      </div>
+
+      {collectType === "token" && (
+        <>
+          <div>
+            <label className="block text-gray-300 text-xs font-medium mb-1">Select Token</label>
+            <select
+              value={selectedToken}
+              onChange={(e) => setSelectedToken(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors text-sm"
+              disabled={isPending || isConfirming || !tokenOptions.length}
+            >
+              <option value="">Choose a token...</option>
+              {tokenOptions.map((token, index) => (
+                <option key={index} value={token.address}>
+                  {token.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-gray-300 text-xs font-medium mb-1">Amount</label>
+            <input
+              type="number"
+              step={
+                tokenMetadata[selectedToken]?.decimals
+                  ? `0.${"0".repeat(tokenMetadata[selectedToken].decimals - 1)}1`
+                  : "0.000001"
+              }
+              min="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors text-sm"
+              disabled={isPending || isConfirming}
+            />
+          </div>
+        </>
+      )}
+
+      <button
+        type="submit"
+        disabled={isPending || isConfirming || (collectType === "token" && (!selectedToken || !amount))}
+        className="w-full flex items-center justify-center px-4 py-2 bg-red-500 text-white font-medium rounded-lg hover:bg-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm"
+      >
+        {(isPending || isConfirming) ? (
+          <>
+            <FaSpinner className="animate-spin mr-2" />
+            Collecting Tokens...
+          </>
+        ) : (
+          <>
+            <FaDownload className="mr-2" />
+            Collect Tokens
+          </>
+        )}
+      </button>
+    </form>
+  );
+};
+
+export default CollectFundsForm;

@@ -3,6 +3,7 @@ import "./index.css";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { WalletProvider } from "./context/WalletContext";
 
+
 import Landing from "./pages/WelcomePage";
 import DepositPage from "./pages/depositPage";
 import RedeemPage from "./pages/RedeemPage";
@@ -10,6 +11,9 @@ import UserDeposits from "./pages/UserDeposits";
 import SetROIPage from "./pages/SetROIPage";
 import AdminPage from "./pages/AdminPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import AdminDashboard from "./pages/admin/AdminDashBoard";
+import UserDepositsDashboard from "./pages/UserDepositsPage";
+import Deposit from "./pages/Deposit";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -22,9 +26,10 @@ const App = () => {
           <Route path="/" element={<Landing />} />
           <Route path="/deposit" element={<DepositPage />} />
           <Route path="/redeem" element={<RedeemPage />} />
-          <Route path="/user-deposits" element={<UserDeposits />} />
+          <Route path="/user-deposits" element={<UserDepositsDashboard />} />
           <Route path="/set-roi" element={<SetROIPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/depositPage" element={<Deposit />} />
           <Route path="/*" element={<NotFoundPage />} />
         </Routes>
       </Router>
