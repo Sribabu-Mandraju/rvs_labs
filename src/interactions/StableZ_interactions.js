@@ -435,14 +435,36 @@ export const useTokenMetadata = (allowedTokens, chainId) => {
 
 
 export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
-  const { writeContract, data: hash, error, isPending, reset } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
   const { address, chain } = useAccount();
   const chainId = chain?.id || baseSepolia.id;
-  const [transactionStep, setTransactionStep] = useState(null); // 'approve', 'deposit', or null
-  const [lastHash, setLastHash] = useState(null); // Track the latest transaction hash
 
-  // Check allowance at the top level
+  // Separate writeContract instances for approve and deposit
+  const {
+    writeContract: writeApprove,
+    data: approveHash,
+    error: approveError,
+    isPending: isApprovePending,
+    reset: resetApprove,
+  } = useWriteContract();
+  const {
+    writeContract: writeDeposit,
+    data: depositHash,
+    error: depositError,
+    isPending: isDepositPending,
+    reset: resetDeposit,
+  } = useWriteContract();
+
+  // Track approval confirmation
+  const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed } = useWaitForTransactionReceipt({
+    hash: approveHash,
+  });
+
+  // Track deposit confirmation
+  const { isLoading: isDepositConfirming, isSuccess: isDepositConfirmed } = useWaitForTransactionReceipt({
+    hash: depositHash,
+  });
+
+  // Check allowance
   const { data: allowance, error: allowanceError, refetch: refetchAllowance } = useReadContract({
     address: tokenAddress,
     abi: IERC20ABI,
@@ -456,204 +478,80 @@ export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
     ? BigInt(allowance) < BigInt(amountInWei)
     : false;
 
+  // Ref to store deposit parameters and toast ID
+  const depositParamsRef = useRef(null);
+  const toastIdRef = useRef(null);
+
   const approveTokens = async () => {
     if (!address) {
-      toast.error("Connect wallet", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error("Connect wallet", { id: "connect-wallet" });
       throw new Error("Wallet not connected");
     }
     if (chainId !== baseSepolia.id) {
-      toast.error("Switch to Base Sepolia", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error("Switch to Base Sepolia", { id: "network-error" });
       throw new Error("Invalid network");
     }
     if (!ethers.isAddress(tokenAddress)) {
-      toast.error("Invalid token address", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error("Invalid token address", { id: "token-error" });
       throw new Error("Invalid token address");
     }
     if (!Number.isInteger(Number(amountInWei)) || Number(amountInWei) <= 0) {
-      toast.error("Invalid amount", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error("Invalid amount", { id: "amount-error" });
       throw new Error("Zero or invalid amount");
     }
 
     try {
-      setTransactionStep("approve");
+      toastIdRef.current = toast.loading("Approving token...", { id: "approve-pending" });
       console.log("Approving token spend...", { tokenAddress, amountInWei });
-      toast.info("Please confirm the approval transaction in your wallet", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
-
-      const { hash: approveHash } = await writeContract({
+      await writeApprove({
         address: tokenAddress,
         abi: IERC20ABI,
         functionName: "approve",
         args: [TIME_LOCK_NFT_STAKING_ADDRESS, BigInt(amountInWei)],
         chainId,
       });
-
-      setLastHash(approveHash);
-      const { isSuccess: isApprovalConfirmed } = await useWaitForTransactionReceipt({
-        hash: approveHash,
-      });
-
-      if (!isApprovalConfirmed) {
-        throw new Error("Approval transaction failed");
-      }
-
-      toast.success("Approval successful! Please proceed with depositing funds.", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
-
-      // Refetch allowance to update needsApproval
-      await refetchAllowance();
     } catch (err) {
       console.error("Approval error:", err);
-      let errorMessage = err.message.includes("User rejected")
+      const errorMessage = err.code === 4001 || err.message.includes("User rejected")
         ? "Approval transaction cancelled"
-        : err.message.includes("Approval transaction failed")
-        ? "Token approval failed"
-        : null;
-      toast.error(errorMessage, {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+        : "Token approval failed";
+      toast.error(errorMessage, { id: "approve-error" });
       throw new Error(errorMessage);
-    } finally {
-      setTransactionStep(null);
-      reset(); // Reset writeContract state
     }
   };
 
   const depositFunds = async () => {
     if (!address) {
-      toast.error("Connect wallet", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error("Connect wallet", { id: "connect-wallet" });
       throw new Error("Wallet not connected");
     }
     if (chainId !== baseSepolia.id) {
-      toast.error("Switch to Base Sepolia", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error("Switch to Base Sepolia", { id: "network-error" });
       throw new Error("Invalid network");
     }
     if (!ethers.isAddress(tokenAddress)) {
-      toast.error("Invalid token address", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error("Invalid token address", { id: "token-error" });
       throw new Error("Invalid token address");
     }
     if (!Number.isInteger(Number(amountInWei)) || Number(amountInWei) <= 0) {
-      toast.error("Invalid amount", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error("Invalid amount", { id: "amount-error" });
       throw new Error("Zero or invalid amount");
     }
 
     try {
-      setTransactionStep("deposit");
+      toastIdRef.current = toast.loading("Depositing funds...", { id: "deposit-pending" });
       console.log("Depositing funds...", { tokenAddress, amountInWei });
-      toast.info("Please confirm the deposit transaction in your wallet", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
-
-      const { hash: depositHash } = await writeContract({
+      await writeDeposit({
         address: TIME_LOCK_NFT_STAKING_ADDRESS,
         abi: TimeLockNFTStakingABI,
         functionName: "depositFunds",
         args: [tokenAddress, BigInt(amountInWei)],
         chainId,
       });
-
-      setLastHash(depositHash);
-      const { isSuccess: isDepositConfirmed } = await useWaitForTransactionReceipt({
-        hash: depositHash,
-      });
-
-      if (!isDepositConfirmed) {
-        throw new Error("Deposit transaction failed");
-      }
     } catch (err) {
       console.error("Deposit funds error:", err);
       let errorMessage;
-      if (err.message.includes("User rejected")) {
+      if (err.code === 4001 || err.message.includes("User rejected")) {
         errorMessage = "Deposit transaction cancelled";
       } else if (err.message.includes("Ownable: caller is not the owner")) {
         errorMessage = "Only owner can deposit funds";
@@ -663,63 +561,140 @@ export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
         errorMessage = "Amount must be greater than zero";
       } else if (err.message.includes("Not enough funds to cover deposits")) {
         errorMessage = "Insufficient token balance";
+      } else {
+        errorMessage = "Failed to deposit funds";
       }
-      //  else {
-      //   errorMessage = "Failed to deposit funds";
-      // }
-      toast.error(errorMessage, {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error(errorMessage, { id: "deposit-error" });
       throw new Error(errorMessage);
-    } finally {
-      setTransactionStep(null);
-      reset(); // Reset writeContract state
     }
   };
 
+  // Auto-trigger deposit after approval
   useEffect(() => {
-    if (isConfirmed && transactionStep === "deposit" && hash === lastHash) {
-      toast.success("Funds deposited successfully!", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
+    if (isApproveConfirmed && depositParamsRef.current) {
+      console.log("Approval confirmed, auto-triggering deposit...");
+      const { tokenAddress, amountInWei } = depositParamsRef.current;
+      depositFunds(tokenAddress, amountInWei).catch((err) => {
+        console.error("Auto-deposit error:", err);
       });
+      depositParamsRef.current = null;
     }
-  }, [isConfirmed, transactionStep, hash, lastHash]);
+  }, [isApproveConfirmed]);
 
+  // Handle transaction states and toasts
+  useEffect(() => {
+    if (toastIdRef.current) {
+      toast.dismiss(toastIdRef.current);
+    }
+
+    if (isApprovePending) {
+      toastIdRef.current = toast.loading("Approving token...", { id: "approve-pending" });
+    } else if (isApproveConfirming) {
+      toastIdRef.current = toast.loading("Confirming approval...", { id: "approve-confirming" });
+    } else if (isApproveConfirmed && !depositParamsRef.current) {
+      toastIdRef.current = toast.success("Token approved!", { id: "approve-success" });
+      resetApprove();
+    } else if (isDepositPending) {
+      toastIdRef.current = toast.loading("Depositing funds...", { id: "deposit-pending" });
+    } else if (isDepositConfirming) {
+      toastIdRef.current = toast.loading("Confirming deposit...", { id: "deposit-confirming" });
+    } else if (isDepositConfirmed) {
+      toastIdRef.current = toast.success("Funds deposited successfully!", { id: "deposit-success" });
+      resetApprove();
+      resetDeposit();
+    } else if (approveError) {
+      const errorMessage = approveError.code === 4001 || approveError.message.includes("User rejected")
+        ? "Approval transaction cancelled"
+        : "Token approval failed";
+      toastIdRef.current = toast.error(errorMessage, { id: "approve-error" });
+      resetApprove();
+      depositParamsRef.current = null; // Clear pending deposit
+    } else if (depositError) {
+      let errorMessage;
+      if (depositError.code === 4001 || depositError.message.includes("User rejected")) {
+        errorMessage = "Deposit transaction cancelled";
+      } else if (depositError.message.includes("Ownable: caller is not the owner")) {
+        errorMessage = "Only owner can deposit funds";
+      } else if (depositError.message.includes("Invalid deposit token")) {
+        errorMessage = "Invalid token";
+      } else if (depositError.message.includes("Zero amount")) {
+        errorMessage = "Amount must be greater than zero";
+      } else if (depositError.message.includes("Not enough funds to cover deposits")) {
+        errorMessage = "Insufficient token balance";
+      } else {
+        errorMessage = "Failed to deposit funds";
+      }
+      toastIdRef.current = toast.error(errorMessage, { id: "deposit-error" });
+      resetDeposit();
+    }
+
+    return () => {
+      if (toastIdRef.current) {
+        toast.dismiss(toastIdRef.current);
+      }
+    };
+  }, [
+    isApprovePending,
+    isApproveConfirming,
+    isApproveConfirmed,
+    isDepositPending,
+    isDepositConfirming,
+    isDepositConfirmed,
+    approveError,
+    depositError,
+  ]);
+
+  // Handle deposit initiation
+  const initiateDeposit = async (tokenAddress, amountInWei) => {
+    if (needsApproval) {
+      depositParamsRef.current = { tokenAddress, amountInWei };
+      await approveTokens();
+    } else {
+      await depositFunds();
+    }
+  };
+
+  // Debug transaction states
   useEffect(() => {
     console.log("Transaction states:", {
-      isPending,
-      isConfirming,
-      isConfirmed,
-      error: error?.message,
-      hash,
-      transactionStep,
-      lastHash,
+      isApprovePending,
+      isApproveConfirming,
+      isApproveConfirmed,
+      approveHash,
+      approveError: approveError?.message,
+      isDepositPending,
+      isDepositConfirming,
+      isDepositConfirmed,
+      depositHash,
+      depositError: depositError?.message,
       allowance,
       needsApproval,
     });
-  }, [isPending, isConfirming, isConfirmed, error, hash, transactionStep, lastHash, allowance, needsApproval]);
+  }, [
+    isApprovePending,
+    isApproveConfirming,
+    isApproveConfirmed,
+    approveHash,
+    approveError,
+    isDepositPending,
+    isDepositConfirming,
+    isDepositConfirmed,
+    depositHash,
+    depositError,
+    allowance,
+    needsApproval,
+  ]);
 
   return {
-    approveTokens,
-    depositFunds,
+    initiateDeposit,
     needsApproval,
-    isPending,
-    isConfirming,
-    isConfirmed,
-    transactionStep,
-    error: error ? error.message : null,
+    isApprovePending,
+    isApproveConfirming,
+    isDepositPending,
+    isDepositConfirming,
+    isDepositConfirmed,
+    approveError: approveError ? approveError.message : null,
+    depositError: depositError ? depositError.message : null,
     refetchAllowance,
   };
 };

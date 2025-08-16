@@ -174,3 +174,52 @@ export const useDeposit = (selectedToken) => {
     tokenBalanceError,
   };
 };
+
+
+export const useRedeem = () => {
+  const { chain } = useAccount();
+  const { writeContract, data: hash, isPending, error: redeemError } = useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+    onSettled(data, error) {
+      if (error) {
+        console.error("Transaction error:", error);
+        toast.error(`Redeem failed: ${error.message.slice(0, 100)}...`, { id: "redeem-error" });
+      } else if (data) {
+        toast.success("Redeem successful!", { id: "redeem-success" });
+      }
+    },
+  });
+
+  const redeem = async (tokenId) => {
+    if (!chain || chain.id !== baseSepolia.id) {
+      toast.error("Please switch to Base Sepolia network.", { id: "network-error" });
+      return;
+    }
+
+    try {
+      await writeContract({
+        address: TIMELOCK_NFT_ADDRESS,
+        abi: TimeLockNFT_ABI,
+        functionName: "redeem",
+        args: [tokenId],
+      });
+    } catch (err) {
+      console.error("Redeem error:", err);
+      const isCancelled = err.code === 4001 || /rejected|denied|cancelled/i.test(err.message);
+      toast.error(isCancelled ? "Transaction cancelled" : `Redeem error: ${err.message.slice(0, 100)}...`, {
+        id: "redeem-error",
+      });
+    }
+  };
+
+  return {
+    redeem,
+    isRedeemPending: isPending,
+    isRedeemConfirming: isConfirming,
+    isRedeemConfirmed: isConfirmed,
+    redeemError,
+    redeemHash: hash,
+  };
+};

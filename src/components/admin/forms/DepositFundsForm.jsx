@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { toast } from "react-toastify";
+import { useState, useMemo, useEffect } from "react";
 import { FaCoins, FaSpinner } from "react-icons/fa";
-import { useApproveAndDepositFunds } from "../../../interactions/StableZ_interactions";
-import { useTokenMetadata } from "../../../interactions/StableZ_interactions";
+import { useApproveAndDepositFunds, useTokenMetadata } from "../../../interactions/StableZ_interactions";
+import toast from "react-hot-toast";
 
 const DepositFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
   const [selectedToken, setSelectedToken] = useState("");
@@ -24,77 +23,52 @@ const DepositFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
     }));
   }, [allowedTokens, tokenMetadata]);
 
-  // Initialize the hook with tokenAddress and amountInWei
+  // Calculate amountInWei based on token decimals
   const amountInWei = amount && selectedToken
     ? (BigInt(Math.floor(Number(amount) * 10 ** (tokenMetadata[selectedToken]?.decimals || 18)))).toString()
     : "0";
 
   const {
-    approveTokens,
-    depositFunds,
+    initiateDeposit,
     needsApproval,
-    isPending,
-    isConfirming,
-    isConfirmed,
-    transactionStep,
-    error,
+    isApprovePending,
+    isApproveConfirming,
+    isDepositPending,
+    isDepositConfirming,
+    isDepositConfirmed,
+    approveError,
+    depositError,
     refetchAllowance,
   } = useApproveAndDepositFunds(selectedToken, amountInWei);
 
-  const handleApprove = async () => {
-    try {
-      await approveTokens();
-      // Refetch allowance to update needsApproval
-      await refetchAllowance();
-    } catch (err) {
-      console.error("Error approving tokens:", err);
-    }
-  };
-
-  const handleDeposit = async () => {
-    try {
-      await depositFunds();
+  // Handle successful deposit
+  useEffect(() => {
+    if (isDepositConfirmed) {
+      toast.success("Deposit completed!", { id: "deposit-complete" });
       setSelectedToken("");
       setAmount("");
       onSuccess();
-    } catch (err) {
-      console.error("Error depositing funds:", err);
     }
-  };
+  }, [isDepositConfirmed, onSuccess]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!selectedToken) {
-      toast.error("Please select a token", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error("Please select a token", { id: "token-error" });
       return;
     }
 
     if (!amount || Number.parseFloat(amount) <= 0) {
-      toast.error("Please enter a valid amount", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error("Please enter a valid amount", { id: "amount-error" });
       return;
     }
 
-    if (needsApproval) {
-      await handleApprove();
-    } else {
-      await handleDeposit();
+    try {
+      await initiateDeposit(selectedToken, amountInWei);
+      await refetchAllowance(); // Ensure allowance is updated
+    } catch (err) {
+      console.error("Transaction error:", err);
     }
   };
 
@@ -111,7 +85,7 @@ const DepositFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
           value={selectedToken}
           onChange={(e) => setSelectedToken(e.target.value)}
           className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-colors"
-          disabled={isPending || isConfirming || isLoadingMetadata || !tokenOptions.length}
+          disabled={isApprovePending || isApproveConfirming || isDepositPending || isDepositConfirming || isLoadingMetadata || !tokenOptions.length}
         >
           <option value="">Choose a token...</option>
           {tokenOptions.map((token, index) => (
@@ -136,7 +110,7 @@ const DepositFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0.00"
           className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-colors"
-          disabled={isPending || isConfirming || isLoadingMetadata}
+          disabled={isApprovePending || isApproveConfirming || isDepositPending || isDepositConfirming || isLoadingMetadata}
         />
         <p className="text-gray-400 text-xs mt-1">Amount of tokens to deposit for covering staking rewards</p>
       </div>
@@ -149,18 +123,23 @@ const DepositFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
       ) : (
         <button
           type="submit"
-          disabled={isPending || isConfirming || !selectedToken || !amount || isLoadingMetadata}
+          disabled={isApprovePending || isApproveConfirming || isDepositPending || isDepositConfirming || !selectedToken || !amount || isLoadingMetadata}
           className="w-full flex items-center justify-center px-6 py-3 bg-green-500 text-white font-medium rounded-lg hover:bg-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
         >
-          {(isPending || isConfirming) ? (
+          {(isApprovePending || isApproveConfirming) ? (
             <>
               <FaSpinner className="animate-spin mr-2" />
-              {transactionStep === "approve" ? "Approving..." : "Depositing Funds..."}
+              Approving...
+            </>
+          ) : (isDepositPending || isDepositConfirming) ? (
+            <>
+              <FaSpinner className="animate-spin mr-2" />
+              Depositing Funds...
             </>
           ) : (
             <>
               <FaCoins className="mr-2" />
-              {needsApproval ? "Approve Tokens" : "Deposit Funds"}
+              {needsApproval ? "Approve and Deposit" : "Deposit Funds"}
             </>
           )}
         </button>

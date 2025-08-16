@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { FaHistory, FaHome, FaCoins, FaShieldAlt, FaBars, FaTimes, FaWater, FaLock, FaInfoCircle } from "react-icons/fa";
 import axios from "axios";
+import { base ,baseSepolia } from "wagmi/chains";
+
 import { useAccount } from "wagmi";
+import { useRedeem } from "../interactions/StableZUser_interactoins";
+import toast from "react-hot-toast";
 
 const UserDepositsDashboard = () => {
   const { address, isConnected, chain } = useAccount();
@@ -14,6 +18,7 @@ const UserDepositsDashboard = () => {
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { redeem, isRedeemPending, isRedeemConfirming, isRedeemConfirmed, redeemError } = useRedeem();
 
   // Navigation links for header
   const navigationLinks = [
@@ -23,9 +28,17 @@ const UserDepositsDashboard = () => {
     { name: "Admin", path: "/admin", icon: FaShieldAlt },
   ];
 
+  // Ref to track toast ID
+  const toastIdRef = useRef(null);
+
   // Fetch user deposits
   useEffect(() => {
     const fetchDeposits = async () => {
+      if (!isConnected || !address) {
+        setLoading(false);
+        setError("Please connect your wallet.");
+        return;
+      }
       try {
         setLoading(true);
         const response = await axios.get(
@@ -51,7 +64,58 @@ const UserDepositsDashboard = () => {
     };
 
     fetchDeposits();
-  }, []);
+  }, [address, isConnected]);
+
+  // Handle redeem transaction states
+  useEffect(() => {
+    if (toastIdRef.current) {
+      toast.dismiss(toastIdRef.current);
+    }
+
+    if (isRedeemPending) {
+      toastIdRef.current = toast.loading("Redeeming deposit...");
+    } else if (isRedeemConfirming) {
+      toastIdRef.current = toast.loading("Confirming redemption...");
+    } else if (isRedeemConfirmed) {
+      toastIdRef.current = toast.success("Deposit redeemed successfully!");
+      // Refresh deposits after successful redemption
+      const fetchDeposits = async () => {
+        try {
+          setLoading(true);
+          const response = await axios.get(
+            `http://localhost:3000/lockTimeNFT/userDeposits?userWalletAddress=${address}`
+          );
+          if (response.data.success) {
+            setDeposits(response.data.deposits);
+            setDepositCount(response.data.depositCount);
+            const total = response.data.deposits.reduce(
+              (sum, deposit) => sum + parseInt(deposit.amount) / 1e6,
+              0
+            );
+            setTotalAmount(total);
+          } else {
+            setError("Failed to fetch deposits");
+          }
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchDeposits();
+    } else if (redeemError) {
+      const isCancelled = redeemError.code === 4001 || /rejected|denied|cancelled/i.test(redeemError.message);
+      toastIdRef.current = toast.error(
+        isCancelled ? "Redemption cancelled" : `Redemption error: ${redeemError.message.slice(0, 100)}...`
+      );
+    }
+
+    return () => {
+      if (toastIdRef.current) {
+        toast.dismiss(toastIdRef.current);
+      }
+    };
+  }, [isRedeemPending, isRedeemConfirming, isRedeemConfirmed, redeemError, address]);
 
   // Convert Unix timestamp to human-readable date
   const formatTimestamp = (timestamp) => {
@@ -70,10 +134,36 @@ const UserDepositsDashboard = () => {
     return (parseInt(amount) / 1e6).toFixed(2);
   };
 
-  // Placeholder for Redeem button action
-  const handleRedeem = (tokenId) => {
-    // Future implementation for redeem action
-    console.log(`Redeem clicked for tokenId: ${tokenId}`);
+  // Handle Redeem button action
+  const handleRedeem = async (tokenId) => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet.", { id: "connect-wallet" });
+      return;
+    }
+    if (chain?.id !== baseSepolia.id) {
+      toast.error("Please switch to Base Sepolia network.", { id: "network-error" });
+      return;
+    }
+
+    const deposit = deposits.find((d) => d.tokenId === tokenId);
+    if (!deposit) {
+      toast.error("Deposit not found.", { id: "deposit-error" });
+      return;
+    }
+
+    const lockup = parseInt(deposit.periodMonths) * 30 * 24 * 60 * 60; // Approximate MONTH as 30 days
+    const unlockTimestamp = parseInt(deposit.startTimestamp) + lockup;
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    if (currentTimestamp < unlockTimestamp) {
+      toast.error("Lockup period not over.", { id: "lockup-error" });
+      return;
+    }
+
+    try {
+      await redeem(tokenId);
+    } catch (err) {
+      console.error("Redeem error:", err);
+    }
   };
 
   return (
@@ -192,7 +282,29 @@ const UserDepositsDashboard = () => {
         <div className="mt-6">
           <h2 className="text-xl font-semibold text-yellow-400 mb-4">Your Deposits</h2>
           {loading ? (
-            <div className="text-center text-gray-400">Loading...</div>
+            <div className="flex justify-center items-center py-4">
+              <svg
+                className="animate-spin h-5 w-5 text-yellow-400"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <span className="ml-2 text-sm text-yellow-400">Loading deposits...</span>
+            </div>
           ) : error ? (
             <div className="text-center text-red-400">{error}</div>
           ) : deposits.length === 0 ? (
@@ -236,11 +348,17 @@ const UserDepositsDashboard = () => {
                     <div className="flex space-x-2 pt-2">
                       <button
                         onClick={() => handleRedeem(deposit.tokenId)}
-                        className="flex-1 bg-yellow-400 text-black font-medium py-2 rounded-lg hover:bg-yellow-300 transition-colors duration-300"
+                        disabled={isRedeemPending || isRedeemConfirming}
+                        className={`flex-1 py-2 rounded-lg font-medium transition-colors duration-300 ${
+                          isRedeemPending || isRedeemConfirming
+                            ? "bg-gray-600 text-gray-300 cursor-not-allowed opacity-50"
+                            : "bg-yellow-400 text-black hover:bg-yellow-300"
+                        }`}
                       >
-                        Redeem
+                        {isRedeemPending || isRedeemConfirming ? "Processing..." : "Redeem"}
                       </button>
-                      <a target="_blank"
+                      <a
+                        target="_blank"
                         href={`http://localhost:3000/lockTimeNFT/getTokenMetaData?tokenId=${deposit.tokenId}`}
                         className="flex-1 bg-gray-700 text-gray-200 font-medium py-2 rounded-lg hover:bg-gray-600 text-center transition-colors duration-300"
                       >

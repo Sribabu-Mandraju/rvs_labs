@@ -81,30 +81,30 @@ const CollectFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      {/* <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3">
-        <div className="flex items-center text-red-400 mb-2">
+      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-3">
+        <div className="flex items-center text-yellow-400 mb-2">
           <FaExclamationTriangle className="mr-2" />
           <span className="font-medium text-sm">Warning</span>
         </div>
-        <p className="text-red-300 text-xs">
+        <p className="text-yellow-300 text-xs">
           These are emergency functions. Use with caution as they directly withdraw funds from the contract.
         </p>
-      </div> */}
+      </div>
 
-      <div>
+      {/* <div>
         <label className="block text-gray-300 text-xs font-medium mb-1">Collection Type</label>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => setCollectType("token")}
             className={`px-3 py-1.5 rounded-lg font-medium transition-colors text-sm ${
-              collectType === "token" ? "bg-red-500 text-white" : "bg-gray-800 text-gray-400 hover:text-white"
+              collectType === "token" ? "bg-yellow-500 text-white" : "bg-gray-800 text-gray-400 hover:text-white"
             }`}
           >
             Collect Tokens
           </button>
         </div>
-      </div>
+      </div> */}
 
       {collectType === "token" && (
         <>
@@ -113,7 +113,7 @@ const CollectFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
             <select
               value={selectedToken}
               onChange={(e) => setSelectedToken(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors text-sm"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-colors text-sm"
               disabled={isPending || isConfirming || !tokenOptions.length}
             >
               <option value="">Choose a token...</option>
@@ -138,7 +138,7 @@ const CollectFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors text-sm"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-colors text-sm"
               disabled={isPending || isConfirming}
             />
           </div>
@@ -148,7 +148,7 @@ const CollectFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
       <button
         type="submit"
         disabled={isPending || isConfirming || (collectType === "token" && (!selectedToken || !amount))}
-        className="w-full flex items-center justify-center px-4 py-2 bg-red-500 text-white font-medium rounded-lg hover:bg-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm"
+        className="w-full flex items-center justify-center px-4 py-2 bg-yellow-500 text-black font-medium rounded-lg hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm"
       >
         {(isPending || isConfirming) ? (
           <>
