@@ -140,7 +140,7 @@ const DataTables = ({ adminData }) => {
       </DataTable>
 
       {/* Deposits with Search and Filter */}
-      <DataTable title="All Deposits" icon={FaSearch}>
+      {/* <DataTable title="All Deposits" icon={FaSearch}>
         <div className="p-6 border-b border-gray-700 bg-gray-800/30">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
@@ -240,7 +240,7 @@ const DataTables = ({ adminData }) => {
             {searchTerm || filterPeriod !== 'all' ? 'No deposits match your search criteria' : 'No deposits found'}
           </div>
         )}
-      </DataTable>
+      </DataTable> */}
     </div>
   );
 };
