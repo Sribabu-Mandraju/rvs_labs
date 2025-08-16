@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAccount, useChainId } from "wagmi";
 import { base, baseSepolia } from "wagmi/chains";
 import { toast } from "react-toastify";
-import { FaArrowLeft, FaShieldAlt, FaNetworkWired } from "react-icons/fa";
+import { FaArrowLeft, FaShieldAlt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 import Header from "../../components/admin/Header";
@@ -46,11 +46,13 @@ const AdminDashboard = () => {
           setError(null);
         } else {
           setError(data.error);
+          setAdminData(null); // Ensure adminData is null for non-admin users
           toast.error(data.error);
         }
       } catch (err) {
         const errorMessage = "Failed to fetch admin data";
         setError(errorMessage);
+        setAdminData(null); // Clear adminData on error
         toast.error(errorMessage);
         console.error("Error fetching admin data:", err);
       } finally {
@@ -76,9 +78,13 @@ const AdminDashboard = () => {
           if (data.success) {
             setAdminData(data);
             setError(null);
+          } else {
+            setError(data.error);
+            setAdminData(null); // Clear adminData on error
           }
         } catch (err) {
           console.error("Error refreshing data:", err);
+          setAdminData(null); // Clear adminData on error
         } finally {
           setIsLoading(false);
         }
@@ -87,31 +93,47 @@ const AdminDashboard = () => {
     }
   };
 
+  // Render Access Denied if wallet is not connected or user is not the contract owner
   if (!isConnected || error === "Access restricted to contract owner") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800">
-        <Header
-          onBack={() => navigate("/")}
-          chainName={getChainName(chainId)}
-          showBackButton={true}
-        />
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-center max-w-md mx-auto">
-            <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
-              <FaShieldAlt className="text-6xl text-red-500 mx-auto mb-6" />
-              <h1 className="text-3xl font-bold text-white mb-4">
-                Access Denied
-              </h1>
-              <p className="text-gray-400 leading-relaxed">
-                You must be the contract owner to access this admin dashboard.
-              </p>
+      <>
+        <header className="relative z-20 bg-black backdrop-blur-xl border-b border-gray-700/50">
+          <div className=" mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <button
+                onClick={() => window.history.back()}
+                className="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300 transition-all duration-300 group"
+              >
+                <FaArrowLeft className="group-hover:-translate-x-1 transition-transform duration-300" />
+                <span className="font-medium">Back to Home</span>
+              </button>
+
+              {/* Desktop Navigation */}
+            </div>
+          </div>
+        </header>
+        <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-gray-900 via-black to-gray-800">
+          {/* Header */}
+
+          <div className="flex-1  flex items-center justify-center p-4">
+            <div className="text-center max-w-md mx-auto">
+              <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
+                <FaShieldAlt className="text-6xl text-red-500 mx-auto mb-6" />
+                <h1 className="text-3xl font-bold text-white mb-4">
+                  Access Denied
+                </h1>
+                <p className="text-gray-400 leading-relaxed">
+                  You must be the contract owner to access this admin dashboard.
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
+  // Render the dashboard only for admin users (when adminData is available and no error)
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800">
       <div className="p-4 border-b border-gray-800">
@@ -160,7 +182,7 @@ const AdminDashboard = () => {
 
           {isLoading ? (
             <LoadingSpinner />
-          ) : adminData ? (
+          ) : adminData && !error ? (
             <div className="space-y-8">
               {activeTab === "overview" && (
                 <StatsOverview adminData={adminData} />

@@ -34,15 +34,15 @@ const DataTables = ({ adminData }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('all');
 
-  const filteredDeposits = adminData.deposits.filter(deposit => {
-    const matchesSearch = deposit.tokenId.toString().includes(searchTerm) ||
-                         deposit.tokenName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         deposit.originalMinter.toLowerCase().includes(searchTerm.toLowerCase());
+  // const filteredDeposits = adminData.deposits.filter(deposit => {
+  //   const matchesSearch = deposit.tokenId.toString().includes(searchTerm) ||
+  //                        deposit.tokenName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //                        deposit.originalMinter.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesPeriod = filterPeriod === 'all' || deposit.periodMonths.toString() === filterPeriod;
+  //   const matchesPeriod = filterPeriod === 'all' || deposit.periodMonths.toString() === filterPeriod;
     
-    return matchesSearch && matchesPeriod;
-  });
+  //   return matchesSearch && matchesPeriod;
+  // });
 
   return (
     <div className="space-y-8">

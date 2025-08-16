@@ -57,13 +57,13 @@ const StatsOverview = ({ adminData }) => {
           subtitle="Supported assets"
           color="blue"
         />
-        <StatsCard
+        {/* <StatsCard
           icon={FaChartLine}
           title="Total Deposits"
           value={adminData.deposits.length}
           subtitle="All time"
           color="green"
-        />
+        /> */}
         <StatsCard
           icon={FaUsers}
           title="Total Balance"
@@ -92,7 +92,7 @@ const StatsOverview = ({ adminData }) => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-4 border border-gray-700 hover:shadow-lg transition-shadow duration-300">
           <h3 className="text-base font-bold text-white mb-3">Recent Activity</h3>
           <div className="space-y-2">
@@ -150,7 +150,7 @@ const StatsOverview = ({ adminData }) => {
             )}
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
