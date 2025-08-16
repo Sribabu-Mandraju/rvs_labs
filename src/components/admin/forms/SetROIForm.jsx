@@ -20,7 +20,9 @@ const SetROIForm = ({ onSuccess }) => {
     const fetchPublicData = async () => {
       setIsFetching(true);
       try {
-        const response = await fetch("http://localhost:3000/lockTimeNFT/publicMetaData");
+        const response = await fetch(
+          "https://lock-nft.onrender.com//lockTimeNFT/publicMetaData"
+        );
         const data = await response.json();
         if (data.success) {
           setFetchedRoi1m((Number(data.roi1m) / 100).toFixed(2));
@@ -75,7 +77,9 @@ const SetROIForm = ({ onSuccess }) => {
   // Trigger onSuccess and clear inputs when transaction is confirmed
   useEffect(() => {
     if (isConfirmed) {
-      toast.success("ROI rates updated successfully!", { id: "set-roi-success" });
+      toast.success("ROI rates updated successfully!", {
+        id: "set-roi-success",
+      });
       setRoi1m("");
       setRoi2m("");
       setRoi3m("");
@@ -134,7 +138,8 @@ const SetROIForm = ({ onSuccess }) => {
       </div>
       <div className="bg-gray-800/50 rounded-lg p-3">
         <p className="text-gray-400 text-sm">
-          <strong>Preview:</strong> 1M: {roi1m || fetchedRoi1m || "0"}%, 2M: {roi2m || fetchedRoi2m || "0"}%, 3M: {roi3m || fetchedRoi3m || "0"}%
+          <strong>Preview:</strong> 1M: {roi1m || fetchedRoi1m || "0"}%, 2M:{" "}
+          {roi2m || fetchedRoi2m || "0"}%, 3M: {roi3m || fetchedRoi3m || "0"}%
         </p>
         <p className="text-gray-400 text-xs mt-1">
           These rates will be applied to new deposits
@@ -148,7 +153,14 @@ const SetROIForm = ({ onSuccess }) => {
       ) : (
         <button
           type="submit"
-          disabled={isPending || isConfirming || isFetching || !roi1m.trim() || !roi2m.trim() || !roi3m.trim()}
+          disabled={
+            isPending ||
+            isConfirming ||
+            isFetching ||
+            !roi1m.trim() ||
+            !roi2m.trim() ||
+            !roi3m.trim()
+          }
           className="w-full flex items-center justify-center px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black font-medium rounded-lg hover:from-yellow-500 hover:to-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm"
         >
           {isPending || isConfirming ? (

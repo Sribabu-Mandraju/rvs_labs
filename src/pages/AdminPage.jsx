@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useAccount, useChainId } from 'wagmi';
-import { base, baseSepolia } from 'wagmi/chains';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect } from "react";
+import { useAccount, useChainId } from "wagmi";
+import { base, baseSepolia } from "wagmi/chains";
+import { toast } from "react-toastify";
 import {
   FaArrowLeft,
   FaShieldAlt,
   FaNetworkWired,
   FaEthereum,
   FaExternalLinkAlt,
-} from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import { ethers } from 'ethers';
+} from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { ethers } from "ethers";
 
 // Map chainId to chain name
 const chains = [base, baseSepolia];
 const getChainName = (chainId) => {
   const chain = chains.find((c) => c.id === chainId);
-  return chain ? chain.name : 'Unknown Network';
+  return chain ? chain.name : "Unknown Network";
 };
 
 const AdminPage = () => {
@@ -30,15 +30,15 @@ const AdminPage = () => {
   useEffect(() => {
     const fetchAdminData = async () => {
       if (!isConnected || !address) {
-        setError('Please connect your wallet');
-        toast.error('Please connect your wallet');
+        setError("Please connect your wallet");
+        toast.error("Please connect your wallet");
         return;
       }
 
       setIsLoading(true);
       try {
         const response = await fetch(
-          `http://localhost:3000/lockTimeNFT/adminMetaData?userAddress=${address}`
+          `https://lock-nft.onrender.com//lockTimeNFT/adminMetaData?userAddress=${address}`
         );
         const data = await response.json();
         if (data.success) {
@@ -49,10 +49,10 @@ const AdminPage = () => {
           toast.error(data.error);
         }
       } catch (err) {
-        const errorMessage = 'Failed to fetch admin data';
+        const errorMessage = "Failed to fetch admin data";
         setError(errorMessage);
         toast.error(errorMessage);
-        console.error('Error fetching admin data:', err);
+        console.error("Error fetching admin data:", err);
       } finally {
         setIsLoading(false);
       }
@@ -63,12 +63,12 @@ const AdminPage = () => {
     }
   }, [address, isConnected]);
 
-  if (!isConnected || error === 'Access restricted to contract owner') {
+  if (!isConnected || error === "Access restricted to contract owner") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex flex-col">
         <div className="p-3 border-b border-gray-800">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
             className="flex items-center text-yellow-400 hover:text-yellow-300 transition-colors text-sm"
           >
             <FaArrowLeft className="mr-2" />
@@ -78,7 +78,9 @@ const AdminPage = () => {
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
             <FaShieldAlt className="text-6xl text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Access Denied
+            </h1>
             <p className="text-gray-400">
               You must be the contract owner to access this page.
             </p>
@@ -94,7 +96,7 @@ const AdminPage = () => {
       <div className="p-3 border-b border-gray-800">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
             className="flex items-center text-yellow-400 hover:text-yellow-300 transition-colors text-sm"
           >
             <FaArrowLeft className="mr-2" />
@@ -127,22 +129,30 @@ const AdminPage = () => {
             <div className="space-y-6">
               {/* Contract Overview */}
               <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
-                <h2 className="text-xl font-semibold text-white mb-4">Contract Overview</h2>
+                <h2 className="text-xl font-semibold text-white mb-4">
+                  Contract Overview
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="text-gray-400 text-sm">Owner Address</p>
-                    <p className="text-white text-sm truncate">{adminData.owner}</p>
+                    <p className="text-white text-sm truncate">
+                      {adminData.owner}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-400 text-sm">Total NFTs Minted</p>
-                    <p className="text-white text-sm">{adminData.totalNFTsMinted}</p>
+                    <p className="text-white text-sm">
+                      {adminData.totalNFTsMinted}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Allowed Tokens */}
               <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
-                <h2 className="text-xl font-semibold text-white mb-4">Allowed Tokens</h2>
+                <h2 className="text-xl font-semibold text-white mb-4">
+                  Allowed Tokens
+                </h2>
                 {adminData.allowedTokens.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {adminData.allowedTokens.map((token, index) => (
@@ -150,7 +160,9 @@ const AdminPage = () => {
                         key={index}
                         className="bg-gray-800/50 p-3 rounded-lg flex items-center justify-between"
                       >
-                        <span className="text-white text-sm truncate">{token}</span>
+                        <span className="text-white text-sm truncate">
+                          {token}
+                        </span>
                         <a
                           href={`https://sepolia.basescan.org/address/${token}`}
                           target="_blank"
@@ -169,7 +181,9 @@ const AdminPage = () => {
 
               {/* Deposited Balances */}
               <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
-                <h2 className="text-xl font-semibold text-white mb-4">Deposited Balances</h2>
+                <h2 className="text-xl font-semibold text-white mb-4">
+                  Deposited Balances
+                </h2>
                 {adminData.depositedBalances.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-400">
@@ -195,7 +209,9 @@ const AdminPage = () => {
                             </td>
                             <td className="px-4 py-2">{balance.tokenName}</td>
                             <td className="px-4 py-2">
-                              {parseFloat(ethers.formatUnits(balance.balance, 6)).toFixed(2)}
+                              {parseFloat(
+                                ethers.formatUnits(balance.balance, 6)
+                              ).toFixed(2)}
                             </td>
                           </tr>
                         ))}
@@ -209,7 +225,9 @@ const AdminPage = () => {
 
               {/* Deposits */}
               <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
-                <h2 className="text-xl font-semibold text-white mb-4">Deposits</h2>
+                <h2 className="text-xl font-semibold text-white mb-4">
+                  Deposits
+                </h2>
                 {adminData.deposits.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-400">
@@ -227,7 +245,10 @@ const AdminPage = () => {
                       </thead>
                       <tbody>
                         {adminData.deposits.map((deposit) => (
-                          <tr key={deposit.tokenId} className="border-t border-gray-700">
+                          <tr
+                            key={deposit.tokenId}
+                            className="border-t border-gray-700"
+                          >
                             <td className="px-4 py-2">{deposit.tokenId}</td>
                             <td className="px-4 py-2">
                               <a
@@ -236,19 +257,28 @@ const AdminPage = () => {
                                 rel="noopener noreferrer"
                                 className="text-yellow-400 hover:text-yellow-300 truncate"
                               >
-                                {deposit.depositToken.slice(0, 6)}...{deposit.depositToken.slice(-4)}
+                                {deposit.depositToken.slice(0, 6)}...
+                                {deposit.depositToken.slice(-4)}
                               </a>
                             </td>
                             <td className="px-4 py-2">{deposit.tokenName}</td>
                             <td className="px-4 py-2">
-                              {parseFloat(ethers.formatUnits(deposit.amount, 6)).toFixed(2)}
-                            </td>
-                            <td className="px-4 py-2">{deposit.periodMonths}</td>
-                            <td className="px-4 py-2">
-                              {new Date(Number(deposit.startTimestamp) * 1000).toLocaleDateString()}
+                              {parseFloat(
+                                ethers.formatUnits(deposit.amount, 6)
+                              ).toFixed(2)}
                             </td>
                             <td className="px-4 py-2">
-                              {new Date(Number(deposit.unlockTimestamp) * 1000).toLocaleDateString()}
+                              {deposit.periodMonths}
+                            </td>
+                            <td className="px-4 py-2">
+                              {new Date(
+                                Number(deposit.startTimestamp) * 1000
+                              ).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-2">
+                              {new Date(
+                                Number(deposit.unlockTimestamp) * 1000
+                              ).toLocaleDateString()}
                             </td>
                             <td className="px-4 py-2">
                               <a
@@ -257,7 +287,8 @@ const AdminPage = () => {
                                 rel="noopener noreferrer"
                                 className="text-yellow-400 hover:text-yellow-300 truncate"
                               >
-                                {deposit.originalMinter.slice(0, 6)}...{deposit.originalMinter.slice(-4)}
+                                {deposit.originalMinter.slice(0, 6)}...
+                                {deposit.originalMinter.slice(-4)}
                               </a>
                             </td>
                           </tr>
