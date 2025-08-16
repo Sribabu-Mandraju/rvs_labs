@@ -269,8 +269,8 @@ function Deposit() {
       </div>
 
       {/* Header */}
-      <header className="relative z-20 bg-black/20 backdrop-blur-xl border-b border-gray-700/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+       <header className="relative z-20 bg-black/20 backdrop-blur-xl border-b border-gray-700/50">
+        <div className=" mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <button
               onClick={() => window.history.back()}

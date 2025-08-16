@@ -24,8 +24,8 @@ const App = () => {
       <Router>
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/deposit" element={<DepositPage />} />
-          <Route path="/redeem" element={<RedeemPage />} />
+          <Route path="/deposit" element={<Deposit />} />
+          <Route path="/redeem" element={<UserDepositsDashboard />} />
           <Route path="/user-deposits" element={<UserDepositsDashboard />} />
           <Route path="/set-roi" element={<SetROIPage />} />
           <Route path="/admin" element={<AdminDashboard />} />

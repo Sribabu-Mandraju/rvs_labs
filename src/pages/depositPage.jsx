@@ -218,15 +218,21 @@ const DepositPage = () => {
   return (
     <div className="h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-800">
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center text-yellow-400 hover:text-yellow-300 transition-colors"
-        >
-          <FaArrowLeft className="mr-2" />
-          Back to Home
-        </button>
-      </div>
+      <header className="relative z-20 bg-black/20 backdrop-blur-xl border-b border-gray-700/50">
+        <div className=" mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300 transition-all duration-300 group"
+            >
+              <FaArrowLeft className="group-hover:-translate-x-1 transition-transform duration-300" />
+              <span className="font-medium">Back to Home</span>
+            </button>
+
+            {/* Desktop Navigation */}
+          </div>
+        </div>
+      </header>
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
