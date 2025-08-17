@@ -1,19 +1,39 @@
-import React, { useState } from 'react';
-import { FaExternalLinkAlt, FaSearch, FaFilter, FaCoins } from 'react-icons/fa';
-import { ethers } from 'ethers';
+import React, { useState } from "react";
+import {
+  FaExternalLinkAlt,
+  FaSearch,
+  FaFilter,
+  FaCoins,
+  FaEye,
+  FaChartBar,
+  FaDownload,
+} from "react-icons/fa";
+import { ethers } from "ethers";
 
-const DataTable = ({ title, children, icon: Icon }) => {
+
+const DataTable = ({ title, children, icon: Icon, description }) => {
   return (
-    <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
-      <div className="p-6 border-b border-gray-700">
-        <div className="flex items-center">
-          {Icon && <Icon className="text-yellow-400 mr-3 text-xl" />}
-          <h3 className="text-xl font-bold text-white">{title}</h3>
+    <div className="bg-gray-900/60 backdrop-blur-xl rounded-2xl border border-gray-700/50 overflow-hidden shadow-2xl">
+      <div className="p-6 lg:p-8 border-b border-gray-700/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            {Icon && (
+              <div className="p-3 bg-gray-800/50 rounded-xl">
+                <Icon className="text-yellow-400 text-xl" />
+              </div>
+            )}
+            <div>
+              <h3 className="text-xl lg:text-2xl font-bold text-white">
+                {title}
+              </h3>
+              {description && (
+                <p className="text-gray-400 text-sm mt-1">{description}</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        {children}
-      </div>
+      <div className="overflow-x-auto">{children}</div>
     </div>
   );
 };
@@ -31,28 +51,44 @@ const ExternalLink = ({ href, children, className = "" }) => (
 );
 
 const DataTables = ({ adminData }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterPeriod, setFilterPeriod] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterPeriod, setFilterPeriod] = useState("all");
 
-  // const filteredDeposits = adminData.deposits.filter(deposit => {
-  //   const matchesSearch = deposit.tokenId.toString().includes(searchTerm) ||
-  //                        deposit.tokenName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //                        deposit.originalMinter.toLowerCase().includes(searchTerm.toLowerCase());
-    
-  //   const matchesPeriod = filterPeriod === 'all' || deposit.periodMonths.toString() === filterPeriod;
-    
-  //   return matchesSearch && matchesPeriod;
-  // });
+  // Helper function to safely format token amounts
+  const formatTokenAmount = (amount, decimals = 18) => {
+    try {
+      // Ensure decimals is a valid number, default to 18 if invalid
+      const validDecimals =
+        typeof decimals === "number" && !isNaN(decimals) ? decimals : 18;
+      return Number(ethers.formatUnits(amount, validDecimals)).toLocaleString();
+    } catch (error) {
+      console.warn("Error formatting token amount:", error);
+      return "0";
+    }
+  };
 
   return (
-    <div className="space-y-8">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">Contract Data</h2>
-        <p className="text-gray-400">View all tokens, balances, and deposits</p>
+    <div className="space-y-8 lg:space-y-12">
+      {/* Header */}
+      <div className="text-center mb-8 lg:mb-12">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500/20 rounded-full mb-4">
+          <FaChartBar className="text-2xl text-blue-400" />
+        </div>
+        <h2 className="text-3xl lg:text-4xl font-bold text-white mb-3">
+          Contract Data
+        </h2>
+        <p className="text-gray-400 text-lg lg:text-xl max-w-3xl mx-auto">
+          Comprehensive view of all tokens, balances, and contract information.
+          Monitor performance and track key metrics.
+        </p>
       </div>
 
       {/* Allowed Tokens */}
-      <DataTable title="Allowed Tokens" icon={FaFilter}>
+      <DataTable
+        title="Allowed Tokens"
+        icon={FaFilter}
+        description="All ERC20 tokens currently supported for staking"
+      >
         {adminData.allowedTokensWithNames.length > 0 ? (
           <table className="w-full">
             <thead className="bg-gray-800/50">
@@ -61,25 +97,54 @@ const DataTables = ({ adminData }) => {
                   Token Address
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Name
+                  Name & Symbol
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  Max Cap
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-gray-700/50">
               {adminData.allowedTokensWithNames.map((token, index) => (
-                <tr key={index} className="hover:bg-gray-800/30 transition-colors">
+                <tr
+                  key={index}
+                  className="hover:bg-gray-800/30 transition-colors"
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-white font-mono text-sm">{token?.address}</div>
+                    <div className="text-white font-mono text-sm bg-gray-800/50 p-2 rounded-lg border border-gray-600/50">
+                      {token?.address}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-white font-mono text-sm">{token?.name}</div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <FaCoins className="text-blue-400 text-sm" />
+                      </div>
+                      <div>
+                        <div className="text-white font-medium text-sm">
+                          {token?.name}
+                        </div>
+                        <div className="text-gray-400 text-xs">
+                          {token?.symbol}
+                        </div>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <ExternalLink href={`https://sepolia.basescan.org/address/${token}`}>
-                      View on Explorer
+                    <div className="text-yellow-400 font-bold text-sm">
+                      {token?.maxCap
+                        ? formatTokenAmount(token.maxCap, token.decimals)
+                        : "N/A"}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <ExternalLink
+                      href={`https://sepolia.basescan.org/address/${token?.address}`}
+                    >
+                      <span className="text-sm">View on Explorer</span>
                     </ExternalLink>
                   </td>
                 </tr>
@@ -87,14 +152,24 @@ const DataTables = ({ adminData }) => {
             </tbody>
           </table>
         ) : (
-          <div className="p-8 text-center text-gray-400">
-            No allowed tokens configured
+          <div className="p-12 text-center">
+            <FaCoins className="text-6xl text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">
+              No allowed tokens configured
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              Add tokens through the Manage tab to get started
+            </p>
           </div>
         )}
       </DataTable>
 
       {/* Deposited Balances */}
-      <DataTable title="Deposited Balances" icon={FaCoins}>
+      <DataTable
+        title="Deposited Balances"
+        icon={FaCoins}
+        description="Current token balances and utilization across all supported assets"
+      >
         {adminData.depositedBalances.length > 0 ? (
           <table className="w-full">
             <thead className="bg-gray-800/50">
@@ -106,147 +181,243 @@ const DataTables = ({ adminData }) => {
                   Name
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Balance
+                  Current Balance
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  Max Capacity
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  Utilization
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
-              {adminData.depositedBalances.map((balance, index) => (
-                <tr key={index} className="hover:bg-gray-800/30 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-white font-mono text-sm">
-                      {balance.token.slice(0, 8)}...{balance.token.slice(-6)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-white font-medium">{adminData.allowedTokensWithNames[index]?.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-yellow-400 font-bold">
-                      {parseFloat(ethers.formatUnits(balance.balance, 6)).toFixed(2)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <ExternalLink href={`https://sepolia.basescan.org/address/${balance.token}`}>
-                      View Token
-                    </ExternalLink>
-                  </td>
-                </tr>
-              ))}
+            <tbody className="divide-y divide-gray-700/50">
+              {adminData.depositedBalances.map((balance, index) => {
+                try {
+                  const tokenInfo = adminData.allowedTokensWithNames[index];
+                  const decimals = tokenInfo?.decimals
+                    ? parseInt(tokenInfo.decimals)
+                    : 18;
+                  const balanceValue = Number.parseFloat(
+                    ethers.formatUnits(balance.balance, decimals)
+                  );
+                  const maxCapValue = tokenInfo
+                    ? Number.parseFloat(
+                        ethers.formatUnits(tokenInfo.maxCap, decimals)
+                      )
+                    : 0;
+                  const utilization =
+                    maxCapValue > 0 ? (balanceValue / maxCapValue) * 100 : 0;
+
+                  return (
+                    <tr
+                      key={index}
+                      className="hover:bg-gray-800/30 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-white font-mono text-sm bg-gray-800/50 p-2 rounded-lg border border-gray-600/50">
+                          {balance.token.slice(0, 8)}...
+                          {balance.token.slice(-6)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                            <FaCoins className="text-green-400 text-sm" />
+                          </div>
+                          <div className="text-white font-medium text-sm">
+                            {tokenInfo?.name || "Unknown Token"}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-yellow-400 font-bold text-sm">
+                          $
+                          {balanceValue.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-gray-300 text-sm">
+                          ${maxCapValue.toLocaleString()}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-16 bg-gray-700/50 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-500 ${
+                                utilization > 80
+                                  ? "bg-red-500"
+                                  : utilization > 60
+                                  ? "bg-yellow-500"
+                                  : "bg-green-500"
+                              }`}
+                              style={{
+                                width: `${Math.min(utilization, 100)}%`,
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-gray-300 text-xs font-medium">
+                            {utilization.toFixed(1)}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <ExternalLink
+                          href={`https://sepolia.basescan.org/address/${balance.token}`}
+                        >
+                          <span className="text-sm">View Token</span>
+                        </ExternalLink>
+                      </td>
+                    </tr>
+                  );
+                } catch (error) {
+                  console.warn(
+                    "Error rendering balance row for index:",
+                    index,
+                    error
+                  );
+                  return (
+                    <tr
+                      key={index}
+                      className="hover:bg-gray-800/30 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-red-400 text-sm">
+                          Error loading data
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-red-400 text-sm">
+                          Error loading data
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-red-400 text-sm">
+                          Error loading data
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-red-400 text-sm">
+                          Error loading data
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-red-400 text-sm">
+                          Error loading data
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-red-400 text-sm">
+                          Error loading data
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+              })}
             </tbody>
           </table>
         ) : (
-          <div className="p-8 text-center text-gray-400">
-            No deposited balances found
+          <div className="p-12 text-center">
+            <FaCoins className="text-6xl text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">No deposited balances found</p>
+            <p className="text-gray-500 text-sm mt-2">
+              Deposits will appear here once users start staking
+            </p>
           </div>
         )}
       </DataTable>
 
-      {/* Deposits with Search and Filter */}
-      {/* <DataTable title="All Deposits" icon={FaSearch}>
-        <div className="p-6 border-b border-gray-700 bg-gray-800/30">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Search by Token ID, Token Name, or Minter Address..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
-              />
+      {/* Contract Summary */}
+      <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 lg:p-8 border border-gray-700/50 shadow-2xl">
+        <h3 className="text-xl lg:text-2xl font-bold text-white mb-6 flex items-center">
+          <FaChartBar className="mr-3 text-blue-400" />
+          Contract Summary
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-600/50">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-500/20 rounded-lg">
+                <FaCoins className="text-blue-400 text-sm" />
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs font-medium">
+                  Total Tokens
+                </p>
+                <p className="text-white font-bold text-lg">
+                  {adminData.allowedTokensWithNames.length}
+                </p>
+              </div>
             </div>
-            <select
-              value={filterPeriod}
-              onChange={(e) => setFilterPeriod(e.target.value)}
-              className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-yellow-500"
-            >
-              <option value="all">All Periods</option>
-              <option value="1">1 Month</option>
-              <option value="2">2 Months</option>
-              <option value="3">3 Months</option>
-            </select>
+          </div>
+
+          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-600/50">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-green-500/20 rounded-lg">
+                <FaDownload className="text-green-400 text-sm" />
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs font-medium">
+                  Active Balances
+                </p>
+                <p className="text-white font-bold text-lg">
+                  {
+                    adminData.depositedBalances.filter((b) => {
+                      try {
+                        const index = adminData.depositedBalances.indexOf(b);
+                        const tokenInfo =
+                          adminData.allowedTokensWithNames[index];
+                        const decimals = tokenInfo?.decimals
+                          ? parseInt(tokenInfo.decimals)
+                          : 18;
+                        const balanceValue = Number.parseFloat(
+                          ethers.formatUnits(b.balance, decimals)
+                        );
+                        return balanceValue > 0;
+                      } catch (error) {
+                        return false;
+                      }
+                    }).length
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-600/50">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-yellow-500/20 rounded-lg">
+                <FaEye className="text-yellow-400 text-sm" />
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs font-medium">Total NFTs</p>
+                <p className="text-white font-bold text-lg">
+                  {adminData.totalNFTsMinted}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-600/50">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <FaFilter className="text-purple-400 text-sm" />
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs font-medium">Network</p>
+                <p className="text-white font-bold text-sm">Base Sepolia</p>
+              </div>
+            </div>
           </div>
         </div>
-        
-        {filteredDeposits.length > 0 ? (
-          <table className="w-full">
-            <thead className="bg-gray-800/50">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Token ID
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Token
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Period
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Start Date
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Unlock Date
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Minter
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700">
-              {filteredDeposits.map((deposit) => (
-                <tr key={deposit.tokenId} className="hover:bg-gray-800/30 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-yellow-400 font-bold">#{deposit.tokenId}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-white font-medium">{deposit.tokenName}</div>
-                    <ExternalLink 
-                      href={`https://sepolia.basescan.org/address/${deposit.depositToken}`}
-                      className="text-xs"
-                    >
-                      {deposit.depositToken.slice(0, 6)}...{deposit.depositToken.slice(-4)}
-                    </ExternalLink>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-white font-medium">
-                      {parseFloat(ethers.formatUnits(deposit.amount, 6)).toFixed(2)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-medium bg-yellow-500/20 text-yellow-400 rounded-full">
-                      {deposit.periodMonths}M
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-300 text-sm">
-                    {new Date(Number(deposit.startTimestamp) * 1000).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-300 text-sm">
-                    {new Date(Number(deposit.unlockTimestamp) * 1000).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <ExternalLink 
-                      href={`https://sepolia.basescan.org/address/${deposit.originalMinter}`}
-                      className="text-sm"
-                    >
-                      {deposit.originalMinter.slice(0, 6)}...{deposit.originalMinter.slice(-4)}
-                    </ExternalLink>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="p-8 text-center text-gray-400">
-            {searchTerm || filterPeriod !== 'all' ? 'No deposits match your search criteria' : 'No deposits found'}
-          </div>
-        )}
-      </DataTable> */}
+      </div>
     </div>
   );
 };
