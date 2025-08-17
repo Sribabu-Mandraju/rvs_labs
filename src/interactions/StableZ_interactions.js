@@ -8,12 +8,11 @@ import {
 import { baseSepolia } from "wagmi/chains";
 import { toast } from "react-toastify";
 import TimeLockNFTStakingABI from "../abis/stablz.json";
-import {ethers} from "ethers"
+import { ethers } from "ethers";
 import IERC20ABI from "../abis/ierc20.json";
 // Replace with your deployed contract address
 const TIME_LOCK_NFT_STAKING_ADDRESS =
-  "0x011b1D37121B292869A1ea9b3eB32bbD67B9F016";
-  
+  "0x27f3e17C1007Cbd7961042Aaea756A2c12726593";
 
 export const useAddAllowedToken = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
@@ -24,7 +23,7 @@ export const useAddAllowedToken = () => {
   const { address, chain } = useAccount();
   const chainId = chain?.id || baseSepolia.id;
 
-  const addAllowedToken = async (tokenAddress) => {
+  const addAllowedToken = async (tokenAddress, cap) => {
     if (!address) {
       throw new Error("Wallet not connected");
     }
@@ -34,14 +33,17 @@ export const useAddAllowedToken = () => {
     if (!ethers.isAddress(tokenAddress)) {
       throw new Error("Invalid token address");
     }
+    if (!cap || cap <= 0) {
+      throw new Error("Invalid cap amount");
+    }
 
     try {
-      console.log("Adding token...", { tokenAddress });
+      console.log("Adding token...", { tokenAddress, cap });
       await writeContract({
         address: TIME_LOCK_NFT_STAKING_ADDRESS,
         abi: TimeLockNFTStakingABI,
         functionName: "addAllowedToken",
-        args: [tokenAddress],
+        args: [tokenAddress, cap],
         chainId,
       });
       toast.info("Adding token...", {
@@ -62,8 +64,12 @@ export const useAddAllowedToken = () => {
         errorMessage = "Zero address not allowed";
       } else if (err.message.includes("Token already exists")) {
         errorMessage = "Token already added";
+      } else if (err.message.includes("Invalid max cap")) {
+        errorMessage = "Invalid cap amount";
       } else if (err.message.includes("Ownable: caller is not the owner")) {
         errorMessage = "Only owner can add tokens";
+      } else if (err.message.includes("insufficient funds")) {
+        errorMessage = "Insufficient gas fees";
       } else {
         errorMessage = "Failed to add token";
       }
@@ -245,11 +251,12 @@ export const useSetROIs = () => {
   };
 };
 
-
-
 export const useCollectTokensNuclear = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+  } = useWaitForTransactionReceipt({ hash });
   const { address, chain } = useAccount();
   const chainId = chain?.id || baseSepolia.id;
 
@@ -382,13 +389,16 @@ export const useCollectTokensNuclear = () => {
   };
 };
 
-
 export const useTokenMetadata = (allowedTokens, chainId) => {
   // Initialize metadata object
   const metadata = {};
 
   // Guard against undefined or empty allowedTokens
-  if (!allowedTokens || !Array.isArray(allowedTokens) || allowedTokens.length === 0) {
+  if (
+    !allowedTokens ||
+    !Array.isArray(allowedTokens) ||
+    allowedTokens.length === 0
+  ) {
     return {};
   }
 
@@ -416,7 +426,11 @@ export const useTokenMetadata = (allowedTokens, chainId) => {
       name: nameError
         ? `${token.slice(0, 6)}...${token.slice(-4)}`
         : name || "Loading...",
-      decimals: decimalsError ? 18 : decimals !== undefined ? Number(decimals) : 18,
+      decimals: decimalsError
+        ? 18
+        : decimals !== undefined
+        ? Number(decimals)
+        : 18,
     };
 
     // Log errors for debugging
@@ -424,15 +438,66 @@ export const useTokenMetadata = (allowedTokens, chainId) => {
       console.error(`Error fetching name for token ${token}:`, nameError);
     }
     if (decimalsError) {
-      console.error(`Error fetching decimals for token ${token}:`, decimalsError);
+      console.error(
+        `Error fetching decimals for token ${token}:`,
+        decimalsError
+      );
     }
   });
 
   return metadata;
 };
 
+// Hook to fetch metadata for a single token
+export const useSingleTokenMetadata = (tokenAddress, chainId) => {
+  const {
+    data: name,
+    error: nameError,
+    isLoading: isNameLoading,
+  } = useReadContract({
+    address: tokenAddress,
+    abi: IERC20ABI,
+    functionName: "name",
+    chainId,
+    query: { enabled: !!tokenAddress && ethers.isAddress(tokenAddress) },
+  });
 
+  const {
+    data: decimals,
+    error: decimalsError,
+    isLoading: isDecimalsLoading,
+  } = useReadContract({
+    address: tokenAddress,
+    abi: IERC20ABI,
+    functionName: "decimals",
+    chainId,
+    query: { enabled: !!tokenAddress && ethers.isAddress(tokenAddress) },
+  });
 
+  const {
+    data: symbol,
+    error: symbolError,
+    isLoading: isSymbolLoading,
+  } = useReadContract({
+    address: tokenAddress,
+    abi: IERC20ABI,
+    functionName: "symbol",
+    chainId,
+    query: { enabled: !!tokenAddress && ethers.isAddress(tokenAddress) },
+  });
+
+  return {
+    name: nameError ? null : name,
+    decimals: decimalsError
+      ? 18
+      : decimals !== undefined
+      ? Number(decimals)
+      : 18,
+    symbol: symbolError ? null : symbol,
+    isLoading: isNameLoading || isDecimalsLoading || isSymbolLoading,
+    hasError: nameError || decimalsError || symbolError,
+  };
+};
 
 export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
   const { address, chain } = useAccount();
@@ -455,28 +520,41 @@ export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
   } = useWriteContract();
 
   // Track approval confirmation
-  const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed } = useWaitForTransactionReceipt({
+  const {
+    isLoading: isApproveConfirming,
+    isSuccess: isApproveConfirmed,
+  } = useWaitForTransactionReceipt({
     hash: approveHash,
   });
 
   // Track deposit confirmation
-  const { isLoading: isDepositConfirming, isSuccess: isDepositConfirmed } = useWaitForTransactionReceipt({
+  const {
+    isLoading: isDepositConfirming,
+    isSuccess: isDepositConfirmed,
+  } = useWaitForTransactionReceipt({
     hash: depositHash,
   });
 
   // Check allowance
-  const { data: allowance, error: allowanceError, refetch: refetchAllowance } = useReadContract({
+  const {
+    data: allowance,
+    error: allowanceError,
+    refetch: refetchAllowance,
+  } = useReadContract({
     address: tokenAddress,
     abi: IERC20ABI,
     functionName: "allowance",
     args: [address, TIME_LOCK_NFT_STAKING_ADDRESS],
     chainId,
-    query: { enabled: !!address && !!tokenAddress && ethers.isAddress(tokenAddress) },
+    query: {
+      enabled: !!address && !!tokenAddress && ethers.isAddress(tokenAddress),
+    },
   });
 
-  const needsApproval = tokenAddress && amountInWei && allowance !== undefined
-    ? BigInt(allowance) < BigInt(amountInWei)
-    : false;
+  const needsApproval =
+    tokenAddress && amountInWei && allowance !== undefined
+      ? BigInt(allowance) < BigInt(amountInWei)
+      : false;
 
   // Ref to store deposit parameters and toast ID
   const depositParamsRef = useRef(null);
@@ -501,7 +579,9 @@ export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
     }
 
     try {
-      toastIdRef.current = toast.loading("Approving token...", { id: "approve-pending" });
+      toastIdRef.current = toast.loading("Approving token...", {
+        id: "approve-pending",
+      });
       console.log("Approving token spend...", { tokenAddress, amountInWei });
       await writeApprove({
         address: tokenAddress,
@@ -512,9 +592,10 @@ export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
       });
     } catch (err) {
       console.error("Approval error:", err);
-      const errorMessage = err.code === 4001 || err.message.includes("User rejected")
-        ? "Approval transaction cancelled"
-        : "Token approval failed";
+      const errorMessage =
+        err.code === 4001 || err.message.includes("User rejected")
+          ? "Approval transaction cancelled"
+          : "Token approval failed";
       toast.error(errorMessage, { id: "approve-error" });
       throw new Error(errorMessage);
     }
@@ -539,7 +620,9 @@ export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
     }
 
     try {
-      toastIdRef.current = toast.loading("Depositing funds...", { id: "deposit-pending" });
+      toastIdRef.current = toast.loading("Depositing funds...", {
+        id: "deposit-pending",
+      });
       console.log("Depositing funds...", { tokenAddress, amountInWei });
       await writeDeposit({
         address: TIME_LOCK_NFT_STAKING_ADDRESS,
@@ -588,38 +671,59 @@ export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
     }
 
     if (isApprovePending) {
-      toastIdRef.current = toast.loading("Approving token...", { id: "approve-pending" });
+      toastIdRef.current = toast.loading("Approving token...", {
+        id: "approve-pending",
+      });
     } else if (isApproveConfirming) {
-      toastIdRef.current = toast.loading("Confirming approval...", { id: "approve-confirming" });
+      toastIdRef.current = toast.loading("Confirming approval...", {
+        id: "approve-confirming",
+      });
     } else if (isApproveConfirmed && !depositParamsRef.current) {
-      toastIdRef.current = toast.success("Token approved!", { id: "approve-success" });
+      toastIdRef.current = toast.success("Token approved!", {
+        id: "approve-success",
+      });
       resetApprove();
     } else if (isDepositPending) {
-      toastIdRef.current = toast.loading("Depositing funds...", { id: "deposit-pending" });
+      toastIdRef.current = toast.loading("Depositing funds...", {
+        id: "deposit-pending",
+      });
     } else if (isDepositConfirming) {
-      toastIdRef.current = toast.loading("Confirming deposit...", { id: "deposit-confirming" });
+      toastIdRef.current = toast.loading("Confirming deposit...", {
+        id: "deposit-confirming",
+      });
     } else if (isDepositConfirmed) {
-      toastIdRef.current = toast.success("Funds deposited successfully!", { id: "deposit-success" });
+      toastIdRef.current = toast.success("Funds deposited successfully!", {
+        id: "deposit-success",
+      });
       resetApprove();
       resetDeposit();
     } else if (approveError) {
-      const errorMessage = approveError.code === 4001 || approveError.message.includes("User rejected")
-        ? "Approval transaction cancelled"
-        : "Token approval failed";
+      const errorMessage =
+        approveError.code === 4001 ||
+        approveError.message.includes("User rejected")
+          ? "Approval transaction cancelled"
+          : "Token approval failed";
       toastIdRef.current = toast.error(errorMessage, { id: "approve-error" });
       resetApprove();
       depositParamsRef.current = null; // Clear pending deposit
     } else if (depositError) {
       let errorMessage;
-      if (depositError.code === 4001 || depositError.message.includes("User rejected")) {
+      if (
+        depositError.code === 4001 ||
+        depositError.message.includes("User rejected")
+      ) {
         errorMessage = "Deposit transaction cancelled";
-      } else if (depositError.message.includes("Ownable: caller is not the owner")) {
+      } else if (
+        depositError.message.includes("Ownable: caller is not the owner")
+      ) {
         errorMessage = "Only owner can deposit funds";
       } else if (depositError.message.includes("Invalid deposit token")) {
         errorMessage = "Invalid token";
       } else if (depositError.message.includes("Zero amount")) {
         errorMessage = "Amount must be greater than zero";
-      } else if (depositError.message.includes("Not enough funds to cover deposits")) {
+      } else if (
+        depositError.message.includes("Not enough funds to cover deposits")
+      ) {
         errorMessage = "Insufficient token balance";
       } else {
         errorMessage = "Failed to deposit funds";

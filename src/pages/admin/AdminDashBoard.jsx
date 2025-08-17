@@ -37,7 +37,7 @@ const AdminDashboard = () => {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `https://lock-nft.onrender.com/lockTimeNFT/adminMetaData?userAddress=${address}`
+          `http://localhost:3000/lockTimeNFT/adminMetaData?userAddress=${address}`
         );
         const data = await response.json();
 
@@ -71,7 +71,7 @@ const AdminDashboard = () => {
         setIsLoading(true);
         try {
           const response = await fetch(
-            `https://lock-nft.onrender.com/lockTimeNFT/adminMetaData?userAddress=${address}`
+            `http://localhost:3000/lockTimeNFT/adminMetaData?userAddress=${address}`
           );
           const data = await response.json();
 
@@ -94,7 +94,8 @@ const AdminDashboard = () => {
   };
 
   // Render Access Denied if wallet is not connected or user is not the contract owner
-  if (!isConnected || error === "Access restricted to contract owner") {
+  // if (!isConnected || error === "Access restricted to contract owner") {
+  if (!isConnected) {
     return (
       <>
         <header className="relative z-20 bg-black backdrop-blur-xl border-b border-gray-700/50">

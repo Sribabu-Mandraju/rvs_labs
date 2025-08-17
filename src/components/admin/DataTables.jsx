@@ -53,7 +53,7 @@ const DataTables = ({ adminData }) => {
 
       {/* Allowed Tokens */}
       <DataTable title="Allowed Tokens" icon={FaFilter}>
-        {adminData.allowedTokens.length > 0 ? (
+        {adminData.allowedTokensWithNames.length > 0 ? (
           <table className="w-full">
             <thead className="bg-gray-800/50">
               <tr>
@@ -61,15 +61,21 @@ const DataTables = ({ adminData }) => {
                   Token Address
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {adminData.allowedTokens.map((token, index) => (
+              {adminData.allowedTokensWithNames.map((token, index) => (
                 <tr key={index} className="hover:bg-gray-800/30 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-white font-mono text-sm">{token}</div>
+                    <div className="text-white font-mono text-sm">{token?.address}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-white font-mono text-sm">{token?.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <ExternalLink href={`https://sepolia.basescan.org/address/${token}`}>
@@ -116,7 +122,7 @@ const DataTables = ({ adminData }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-white font-medium">{balance.tokenName}</div>
+                    <div className="text-white font-medium">{adminData.allowedTokensWithNames[index]?.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-yellow-400 font-bold">

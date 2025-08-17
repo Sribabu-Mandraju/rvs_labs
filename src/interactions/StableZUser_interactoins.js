@@ -5,7 +5,7 @@ import USDT_ABI from "../abis/ierc20.json";
 import TimeLockNFT_ABI from "../abis/stablz.json";
 
 
-const TIMELOCK_NFT_ADDRESS = "0x011b1D37121B292869A1ea9b3eB32bbD67B9F016"; // Replace with your contract address
+const TIMELOCK_NFT_ADDRESS = "0x27f3e17C1007Cbd7961042Aaea756A2c12726593"; // Replace with your contract address
 
 
 export const useDeposit = (selectedToken) => {

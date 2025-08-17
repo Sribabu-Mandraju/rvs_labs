@@ -53,7 +53,7 @@ const StatsOverview = ({ adminData }) => {
         <StatsCard
           icon={FaLock}
           title="Allowed Tokens"
-          value={adminData.allowedTokens.length}
+          value={adminData.allowedTokensWithNames.length}
           subtitle="Supported assets"
           color="blue"
         />

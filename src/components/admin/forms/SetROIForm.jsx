@@ -21,7 +21,7 @@ const SetROIForm = ({ onSuccess }) => {
       setIsFetching(true);
       try {
         const response = await fetch(
-          "https://lock-nft.onrender.com/lockTimeNFT/publicMetaData"
+          "http://localhost:3000/lockTimeNFT/publicMetaData"
         );
         const data = await response.json();
         if (data.success) {
