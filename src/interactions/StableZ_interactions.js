@@ -297,7 +297,7 @@ export const useCollectTokensNuclear = () => {
       });
       throw new Error("Invalid token address");
     }
-    if (!Number.isInteger(Number(amount)) || Number(amount) <= 0) {
+    if (!amount || BigInt(amount) <= 0n) {
       toast.error("Invalid amount", {
         position: "bottom-right",
         autoClose: 5000,
@@ -315,7 +315,7 @@ export const useCollectTokensNuclear = () => {
       await writeContract({
         address: TIME_LOCK_NFT_STAKING_ADDRESS,
         abi: TimeLockNFTStakingABI,
-        functionName: "collectTokensNuclear",
+        functionName: "collectTokens",
         args: [tokenAddress, BigInt(amount)],
         chainId,
       });
@@ -339,6 +339,11 @@ export const useCollectTokensNuclear = () => {
         errorMessage = "Invalid token";
       } else if (err.message.includes("Zero amount")) {
         errorMessage = "Amount must be greater than zero";
+      } else if (err.message.includes("insufficient funds")) {
+        errorMessage = "Insufficient gas fees";
+      } else if (err.message.includes("execution reverted")) {
+        errorMessage =
+          "Transaction failed - check token balance and permissions";
       } else {
         errorMessage = "Failed to collect tokens";
       }
@@ -381,6 +386,112 @@ export const useCollectTokensNuclear = () => {
 
   return {
     collectTokensNuclear,
+    isPending,
+    isConfirming,
+    isConfirmed,
+    hash,
+    error: error ? error.message : null,
+  };
+};
+
+export const useUpdateMaxCap = () => {
+  const { writeContract, data: hash, error, isPending } = useWriteContract();
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+  } = useWaitForTransactionReceipt({ hash });
+  const { address, chain } = useAccount();
+  const chainId = chain?.id || baseSepolia.id;
+
+  const updateMaxCap = async (tokenAddress, cap) => {
+    if (!address) {
+      throw new Error("Wallet not connected");
+    }
+    if (chainId !== baseSepolia.id) {
+      throw new Error("Invalid network");
+    }
+    if (!ethers.isAddress(tokenAddress)) {
+      throw new Error("Invalid token address");
+    }
+    if (!cap || BigInt(cap) <= 0n) {
+      throw new Error("Zero or invalid cap amount");
+    }
+
+    try {
+      console.log("Updating max cap...", { tokenAddress, cap });
+      await writeContract({
+        address: TIME_LOCK_NFT_STAKING_ADDRESS,
+        abi: TimeLockNFTStakingABI,
+        functionName: "updateMaxCap",
+        args: [tokenAddress, BigInt(cap)],
+        chainId,
+      });
+      toast.info("Updating max cap...", {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "dark",
+      });
+    } catch (err) {
+      console.error("Update max cap error:", err);
+      let errorMessage;
+      if (err.message.includes("User rejected")) {
+        errorMessage = "Transaction cancelled";
+      } else if (err.message.includes("Ownable: caller is not the owner")) {
+        errorMessage = "Only owner can update max cap";
+      } else if (err.message.includes("Invalid max cap value")) {
+        errorMessage = "New cap must be greater than current deposited balance";
+      } else if (err.message.includes("Token not allowed")) {
+        errorMessage = "Token is not allowed";
+      } else if (err.message.includes("insufficient funds")) {
+        errorMessage = "Insufficient gas fees";
+      } else if (err.message.includes("execution reverted")) {
+        errorMessage = "Transaction failed - check token status and balance";
+      } else {
+        errorMessage = "Failed to update max cap";
+      }
+      toast.error(errorMessage, {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "dark",
+      });
+      throw new Error(errorMessage);
+    }
+  };
+
+  useEffect(() => {
+    if (isConfirmed) {
+      toast.success("Max cap updated!", {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "dark",
+      });
+    }
+  }, [isConfirmed]);
+
+  useEffect(() => {
+    console.log("Transaction states:", {
+      isPending,
+      isConfirming,
+      isConfirmed,
+      error: error?.message,
+      hash,
+    });
+  }, [isPending, isConfirming, isConfirmed, error, hash]);
+
+  return {
+    updateMaxCap,
     isPending,
     isConfirming,
     isConfirmed,

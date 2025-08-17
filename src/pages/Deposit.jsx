@@ -48,6 +48,10 @@ function Deposit() {
     tokenBalance,
     allowanceError,
     tokenBalanceError,
+    // API call states
+    isApiCallPending,
+    apiCallError,
+    apiCallSuccess,
   } = useDeposit(selectedToken);
 
   // Check ETH balance for gas (0.001 ETH threshold)
@@ -127,6 +131,20 @@ function Deposit() {
       depositParamsRef.current = null;
     }
   }, [isApproveConfirmed, deposit]);
+
+  // Reset form after successful deposit and API call
+  useEffect(() => {
+    if (apiCallSuccess) {
+      // Reset form after a delay to show success message
+      const timer = setTimeout(() => {
+        setAmount("");
+        setPeriodMonths("1");
+        // Keep the selected token as it might be useful for the user
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [apiCallSuccess]);
 
   // Handle deposit (with approval if needed)
   const handleDeposit = async () => {
@@ -235,8 +253,10 @@ function Deposit() {
       toastIdRef.current = toast.loading(
         "Approval confirmed, initiating deposit..."
       );
-    } else if (isDepositConfirmed) {
+    } else if (isDepositConfirmed && !isApiCallPending && !apiCallSuccess) {
       toastIdRef.current = toast.success("Token deposited successfully!");
+    } else if (isApiCallPending) {
+      toastIdRef.current = toast.loading("Recording deposit in database...");
     } else if (approveError) {
       const isCancelled =
         approveError.code === 4001 ||
@@ -255,6 +275,14 @@ function Deposit() {
           ? "Deposit transaction cancelled"
           : `Deposit error: ${depositError.message.slice(0, 100)}...`
       );
+    } else if (apiCallError) {
+      toastIdRef.current = toast.error(
+        `Database recording failed: ${apiCallError.slice(0, 100)}...`
+      );
+    } else if (apiCallSuccess) {
+      toastIdRef.current = toast.success(
+        "Deposit completed and recorded successfully!"
+      );
     }
     return () => {
       if (toastIdRef.current) {
@@ -268,8 +296,11 @@ function Deposit() {
     isDepositConfirming,
     isApproveConfirmed,
     isDepositConfirmed,
+    isApiCallPending,
     approveError,
     depositError,
+    apiCallError,
+    apiCallSuccess,
   ]);
 
   // Format amount for display
@@ -602,6 +633,7 @@ function Deposit() {
                   isApproveConfirming ||
                   isDepositPending ||
                   isDepositConfirming ||
+                  isApiCallPending ||
                   !hasEnoughBalance ||
                   !hasEnoughGas ||
                   !isConnected ||
@@ -617,6 +649,7 @@ function Deposit() {
                   isApproveConfirming ||
                   isDepositPending ||
                   isDepositConfirming ||
+                  isApiCallPending ||
                   !hasEnoughBalance ||
                   !hasEnoughGas ||
                   !isConnected ||
@@ -634,6 +667,8 @@ function Deposit() {
                   ? "Processing Approval..."
                   : isDepositPending || isDepositConfirming
                   ? "Processing Deposit..."
+                  : isApiCallPending
+                  ? "Recording Deposit..."
                   : hasEnoughAllowance
                   ? "Stake Tokens"
                   : "Approve & Stake"}
@@ -658,6 +693,45 @@ function Deposit() {
                     <span className="text-sm text-yellow-400">
                       Please switch to Base Sepolia network
                     </span>
+                  </div>
+                </div>
+              )}
+
+              {/* API Call Status */}
+              {isApiCallPending && (
+                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                    <span className="text-sm text-blue-400">
+                      Recording deposit in database...
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {apiCallError && (
+                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <FaExclamationTriangle className="text-red-400" />
+                    <span className="text-sm text-red-400">
+                      Database recording failed: {apiCallError.slice(0, 100)}...
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {apiCallSuccess && (
+                <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <FaCheckCircle className="text-green-400" />
+                    <div className="flex flex-col">
+                      <span className="text-sm text-green-400 font-medium">
+                        Deposit recorded successfully in database
+                      </span>
+                      <span className="text-xs text-green-300 mt-1">
+                        Your tokens are now locked and earning rewards
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}

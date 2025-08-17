@@ -2,15 +2,12 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { FaCoins, FaSpinner } from "react-icons/fa";
-import { useApproveAndDepositFunds, useTokenMetadata } from "../../../interactions/StableZ_interactions";
+import { useApproveAndDepositFunds } from "../../../interactions/StableZ_interactions";
 import toast from "react-hot-toast";
 
 const DepositFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
   const [selectedToken, setSelectedToken] = useState("");
   const [amount, setAmount] = useState("");
-
-  // Fetch token metadata using custom hook
-  const tokenMetadata = useTokenMetadata(allowedTokens, chainId);
 
   // Memoize token options for dropdown
   const tokenOptions = useMemo(() => {
@@ -18,15 +15,24 @@ const DepositFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
       return [];
     }
     return allowedTokens.map((token) => ({
-      address: token,
-      name: tokenMetadata[token]?.name || "Loading...",
+      address: token.address,
+      name: token.name,
     }));
-  }, [allowedTokens, tokenMetadata]);
+  }, [allowedTokens]);
+
+  // Helper function to get selected token data
+  const selectedTokenData = useMemo(() => {
+    if (!selectedToken || !allowedTokens) return null;
+    return allowedTokens.find((token) => token.address === selectedToken);
+  }, [selectedToken, allowedTokens]);
 
   // Calculate amountInWei based on token decimals
-  const amountInWei = amount && selectedToken
-    ? (BigInt(Math.floor(Number(amount) * 10 ** (tokenMetadata[selectedToken]?.decimals || 18)))).toString()
-    : "0";
+  const amountInWei =
+    amount && selectedTokenData
+      ? BigInt(
+          Math.floor(Number(amount) * 10 ** (selectedTokenData.decimals || 18))
+        ).toString()
+      : "0";
 
   const {
     initiateDeposit,
@@ -72,23 +78,26 @@ const DepositFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
     }
   };
 
-  // Handle loading state for metadata
-  const isLoadingMetadata = allowedTokens?.some(
-    (token) => !tokenMetadata[token] || tokenMetadata[token].name === "Loading..."
-  );
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-gray-300 text-sm font-medium mb-2">Select Token</label>
+        <label className="block text-gray-300 text-sm font-medium mb-2">
+          Select Token
+        </label>
         <select
           value={selectedToken}
           onChange={(e) => setSelectedToken(e.target.value)}
           className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-colors"
-          disabled={isApprovePending || isApproveConfirming || isDepositPending || isDepositConfirming || isLoadingMetadata || !tokenOptions.length}
+          disabled={
+            isApprovePending ||
+            isApproveConfirming ||
+            isDepositPending ||
+            isDepositConfirming ||
+            !tokenOptions.length
+          }
         >
           <option value="">Choose a token...</option>
-          {tokenOptions.map((token, index) => (
+          {allowedTokens.map((token, index) => (
             <option key={index} value={token.address}>
               {token.name}
             </option>
@@ -97,12 +106,14 @@ const DepositFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
       </div>
 
       <div>
-        <label className="block text-gray-300 text-sm font-medium mb-2">Amount</label>
+        <label className="block text-gray-300 text-sm font-medium mb-2">
+          Amount
+        </label>
         <input
           type="number"
           step={
-            tokenMetadata[selectedToken]?.decimals
-              ? `0.${"0".repeat(tokenMetadata[selectedToken].decimals - 1)}1`
+            selectedTokenData?.decimals
+              ? `0.${"0".repeat(selectedTokenData.decimals - 1)}1`
               : "0.000001"
           }
           min="0"
@@ -110,28 +121,42 @@ const DepositFundsForm = ({ onSuccess, allowedTokens, chainId }) => {
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0.00"
           className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-colors"
-          disabled={isApprovePending || isApproveConfirming || isDepositPending || isDepositConfirming || isLoadingMetadata}
+          disabled={
+            isApprovePending ||
+            isApproveConfirming ||
+            isDepositPending ||
+            isDepositConfirming
+          }
         />
-        <p className="text-gray-400 text-xs mt-1">Amount of tokens to deposit for covering staking rewards</p>
+        <p className="text-gray-400 text-xs mt-1">
+          Amount of tokens to deposit for covering staking rewards
+        </p>
       </div>
 
-      {isLoadingMetadata ? (
+      {!allowedTokens || allowedTokens.length === 0 ? (
         <div className="flex items-center justify-center">
           <FaSpinner className="animate-spin text-gray-400" />
-          <span className="ml-2 text-gray-400">Loading token data...</span>
+          <span className="ml-2 text-gray-400">No Token Data Available...</span>
         </div>
       ) : (
         <button
           type="submit"
-          disabled={isApprovePending || isApproveConfirming || isDepositPending || isDepositConfirming || !selectedToken || !amount || isLoadingMetadata}
+          disabled={
+            isApprovePending ||
+            isApproveConfirming ||
+            isDepositPending ||
+            isDepositConfirming ||
+            !selectedToken ||
+            !amount
+          }
           className="w-full flex items-center justify-center px-6 py-3 bg-green-500 text-white font-medium rounded-lg hover:bg-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
         >
-          {(isApprovePending || isApproveConfirming) ? (
+          {isApprovePending || isApproveConfirming ? (
             <>
               <FaSpinner className="animate-spin mr-2" />
               Approving...
             </>
-          ) : (isDepositPending || isDepositConfirming) ? (
+          ) : isDepositPending || isDepositConfirming ? (
             <>
               <FaSpinner className="animate-spin mr-2" />
               Depositing Funds...

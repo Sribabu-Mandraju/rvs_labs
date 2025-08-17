@@ -4,6 +4,7 @@ import AddTokenForm from './forms/AddTokenForm';
 import SetROIForm from './forms/SetROIForm';
 import DepositFundsForm from './forms/DepositFundsForm';
 import CollectFundsForm from './forms/CollectFundsForm';
+import UpdateMaxCapForm from './forms/UpdateMaxCapForm';
 
 const FormCard = ({ icon: Icon, title, description, children, color = 'yellow' }) => {
   const colorClasses = {
@@ -71,7 +72,7 @@ const AdminForms = ({ adminData, onSuccess, chainId }) => {
         >
           <DepositFundsForm 
             onSuccess={onSuccess} 
-            allowedTokens={adminData.allowedTokens}
+            allowedTokens={adminData.allowedTokensWithNames}
             chainId={chainId}
           />
         </FormCard>
@@ -84,7 +85,19 @@ const AdminForms = ({ adminData, onSuccess, chainId }) => {
         >
           <CollectFundsForm 
             onSuccess={onSuccess} 
-            allowedTokens={adminData.allowedTokens}
+            allowedTokens={adminData.allowedTokensWithNames}
+            chainId={chainId}
+          />
+        </FormCard>
+        <FormCard
+          icon={FaDownload}
+          title="Update Max Cap"
+          description="Update Max Cap for a token"
+          color="yellow"
+        >
+          <UpdateMaxCapForm 
+            onSuccess={onSuccess} 
+            allowedTokens={adminData.allowedTokensWithNames}
             chainId={chainId}
           />
         </FormCard>
