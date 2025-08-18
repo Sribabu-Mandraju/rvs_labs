@@ -13,6 +13,7 @@ import {
   FaWater,
   FaLock,
   FaInfoCircle,
+  FaSyncAlt,
 } from "react-icons/fa";
 import axios from "axios";
 import { base, baseSepolia } from "wagmi/chains";
@@ -26,9 +27,11 @@ const UserDepositsDashboard = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [deposits, setDeposits] = useState([]);
   const [depositCount, setDepositCount] = useState(0);
-  const [totalAmount, setTotalAmount] = useState(0);
+  const [totalsByToken, setTotalsByToken] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const {
     redeem,
     isRedeemPending,
@@ -48,39 +51,96 @@ const UserDepositsDashboard = () => {
   // Ref to track toast ID
   const toastIdRef = useRef(null);
 
-  // Fetch user deposits
-  useEffect(() => {
-    const fetchDeposits = async () => {
-      if (!isConnected || !address) {
-        setLoading(false);
-        setError("Please connect your wallet.");
-        return;
-      }
-      try {
-        setLoading(true);
-        const response = await axios.get(
-          `http://localhost:3000/lockTimeNFT/userDeposits?userWalletAddress=${address}`
-        );
-        if (response.data.success) {
-          setDeposits(response.data.deposits);
-          setDepositCount(response.data.depositCount);
-          // Calculate total amount (assuming 6 decimals for USDC)
-          const total = response.data.deposits.reduce(
-            (sum, deposit) => sum + parseInt(deposit.amount) / 1e6,
-            0
-          );
-          setTotalAmount(total);
-        } else {
-          setError("Failed to fetch deposits");
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Helpers for localStorage
+  const storageKey = address ? `userDeposits:${address.toLowerCase()}` : null;
+  const saveToStorage = (data) => {
+    if (!storageKey) return;
+    try {
+      const payload = { ...data, _updatedAt: Date.now() };
+      localStorage.setItem(storageKey, JSON.stringify(payload));
+    } catch {}
+  };
+  const loadFromStorage = () => {
+    if (!storageKey) return null;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  };
 
-    fetchDeposits();
+  const computeTotalsByToken = (list) => {
+    const totals = {};
+    for (const d of list) {
+      const symbol = d.tokenSymbol || d.tokenName || "TOKEN";
+      const decimals = Number(d.decimals ?? 6);
+      const scaled = Number(d.amount) / Math.pow(10, decimals);
+      totals[symbol] = (totals[symbol] || 0) + scaled;
+    }
+    return totals;
+  };
+
+  const fetchDeposits = async ({ background = false } = {}) => {
+    if (!isConnected || !address) {
+      setLoading(false);
+      setError("Please connect your wallet.");
+      return;
+    }
+    try {
+      background ? setIsRefreshing(true) : setLoading(true);
+      const response = await axios.get(
+        `http://localhost:3000/lockTimeNFT/userDeposits?userWalletAddress=${address}`
+      );
+      if (response.data.success) {
+        const list = response.data.deposits || [];
+        const totals = computeTotalsByToken(list);
+        setDeposits(list);
+        setDepositCount(response.data.depositCount || list.length);
+        setTotalsByToken(totals);
+        setLastUpdated(Date.now());
+        saveToStorage({
+          deposits: list,
+          depositCount: response.data.depositCount || list.length,
+          totalsByToken: totals,
+        });
+        setError(null);
+      } else {
+        setError("Failed to fetch deposits");
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      background ? setIsRefreshing(false) : setLoading(false);
+    }
+  };
+
+  // Hydrate from cache and refetch on mount/address change
+  useEffect(() => {
+    if (!address) {
+      setDeposits([]);
+      setDepositCount(0);
+      setTotalsByToken({});
+      setLastUpdated(null);
+      setLoading(false);
+      return;
+    }
+    const cached = loadFromStorage();
+    if (cached && Array.isArray(cached.deposits)) {
+      setDeposits(cached.deposits);
+      setDepositCount(cached.depositCount || cached.deposits.length);
+      setTotalsByToken(
+        cached.totalsByToken || computeTotalsByToken(cached.deposits)
+      );
+      setLastUpdated(cached._updatedAt || null);
+      setLoading(false);
+      // Background refresh
+      fetchDeposits({ background: true });
+    } else {
+      // No cache, do full load
+      fetchDeposits();
+    }
   }, [address, isConnected]);
 
   // Handle redeem transaction states
@@ -95,31 +155,7 @@ const UserDepositsDashboard = () => {
       toastIdRef.current = toast.loading("Confirming redemption...");
     } else if (isRedeemConfirmed) {
       toastIdRef.current = toast.success("Deposit redeemed successfully!");
-      // Refresh deposits after successful redemption
-      const fetchDeposits = async () => {
-        try {
-          setLoading(true);
-          const response = await axios.get(
-            `http://localhost:3000/lockTimeNFT/userDeposits?userWalletAddress=${address}`
-          );
-          if (response.data.success) {
-            setDeposits(response.data.deposits);
-            setDepositCount(response.data.depositCount);
-            const total = response.data.deposits.reduce(
-              (sum, deposit) => sum + parseInt(deposit.amount) / 1e6,
-              0
-            );
-            setTotalAmount(total);
-          } else {
-            setError("Failed to fetch deposits");
-          }
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchDeposits();
+      fetchDeposits({ background: true });
     } else if (redeemError) {
       const isCancelled =
         redeemError.code === 4001 ||
@@ -156,9 +192,10 @@ const UserDepositsDashboard = () => {
     });
   };
 
-  // Format amount (assuming 6 decimals for USDC)
-  const formatAmount = (amount) => {
-    return (parseInt(amount) / 1e6).toFixed(2);
+  // Format amount with token decimals
+  const formatAmount = (amount, decimals = 6) => {
+    const num = Number(amount) / Math.pow(10, Number(decimals));
+    return num.toFixed(2);
   };
 
   // Handle Redeem button action
@@ -279,24 +316,76 @@ const UserDepositsDashboard = () => {
               </p>
             </div>
           </div>
-          <div className="bg-black/30 backdrop-blur-sm border border-gray-700 rounded-xl p-4 flex items-center space-x-4">
+          <div className="bg-black/30 backdrop-blur-sm border border-gray-700 rounded-xl p-4 flex items-start space-x-4">
             <div className="w-12 h-12 bg-gradient-to-br from-yellow-400/20 to-yellow-600/20 rounded-full flex items-center justify-center">
               <FaLock className="text-xl text-yellow-400" />
             </div>
-            <div>
-              <h3 className="text-sm text-gray-400">Total Staked Amount</h3>
-              <p className="text-lg font-semibold text-yellow-400">
-                {totalAmount.toFixed(2)} USDC
-              </p>
+            <div className="flex-1">
+              <h3 className="text-sm text-gray-400">Total Staked Amounts</h3>
+              {Object.keys(totalsByToken).length === 0 ? (
+                <p className="text-lg font-semibold text-yellow-400">0</p>
+              ) : (
+                <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                  {Object.entries(totalsByToken).map(([symbol, total]) => (
+                    <div key={symbol} className="text-sm text-gray-300">
+                      <span className="font-medium text-yellow-400">
+                        {total.toFixed(2)}
+                      </span>{" "}
+                      {symbol}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Deposits List */}
         <div className="mt-6">
-          <h2 className="text-xl font-semibold text-yellow-400 mb-4">
-            Your Deposits
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-yellow-400">
+              Your Deposits
+            </h2>
+            <div className="flex items-center space-x-3">
+              <span className="text-xs text-gray-400">
+                Last updated:{" "}
+                {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : "-"}
+              </span>
+              <button
+                onClick={() => fetchDeposits({ background: true })}
+                disabled={isRefreshing || loading}
+                className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  isRefreshing || loading
+                    ? "bg-gray-700 text-gray-300 cursor-not-allowed"
+                    : "bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30"
+                }`}
+              >
+                <svg
+                  className={`h-4 w-4 mr-2 ${
+                    isRefreshing ? "animate-spin" : ""
+                  }`}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v2a6 6 0 00-6 6H4z"
+                  ></path>
+                </svg>
+                {isRefreshing || loading ? "Refreshing" : "Refresh"}
+              </button>
+            </div>
+          </div>
           {loading ? (
             <div className="flex justify-center items-center py-4">
               <svg
@@ -351,7 +440,8 @@ const UserDepositsDashboard = () => {
                     <div className="space-y-2">
                       <p className="text-sm text-gray-400">
                         <span className="font-medium">Amount:</span>{" "}
-                        {formatAmount(deposit.amount)} USDC
+                        {formatAmount(deposit.amount, deposit.decimals)}{" "}
+                        {deposit.tokenSymbol || "TOKEN"}
                       </p>
                       <p className="text-sm text-gray-400">
                         <span className="font-medium">Start Date:</span>{" "}

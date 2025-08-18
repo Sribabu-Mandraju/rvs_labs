@@ -70,12 +70,12 @@ const Landing = () => {
     //   route: "/deposit",
     //   description: "Custom development services",
     // },
-    {
-      title: "LICENSE KEYS",
-      icon: FaKey,
-      route: "/licence",
-      description: "Software licensing solutions",
-    },
+    // {
+    //   title: "LICENSE KEYS",
+    //   icon: FaKey,
+    //   route: "/licence",
+    //   description: "Software licensing solutions",
+    // },
     {
       title: "ADMIN PANEL",
       icon: FaShieldAlt,

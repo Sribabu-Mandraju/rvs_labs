@@ -6,12 +6,14 @@ import {
   FaDownload,
   FaEdit,
   FaCog,
+  FaToggleOn,
 } from "react-icons/fa";
 import AddTokenForm from "./forms/AddTokenForm";
 import SetROIForm from "./forms/SetROIForm";
 import DepositFundsForm from "./forms/DepositFundsForm";
 import CollectFundsForm from "./forms/CollectFundsForm";
 import UpdateMaxCapForm from "./forms/UpdateMaxCapForm";
+import ToggleDepositsForm from "./forms/ToggleDepositsForm";
 
 const FormCard = ({
   icon: Icon,
@@ -31,6 +33,8 @@ const FormCard = ({
       "border-red-500/30 hover:border-red-500/50 from-red-500/10 to-red-600/10",
     purple:
       "border-purple-500/30 hover:border-purple-500/50 from-purple-500/10 to-purple-600/10",
+    orange:
+      "border-orange-500/30 hover:border-orange-500/50 from-orange-500/10 to-orange-600/10",
   };
 
   const iconColors = {
@@ -39,6 +43,7 @@ const FormCard = ({
     green: "text-green-400",
     red: "text-red-400",
     purple: "text-purple-400",
+    orange: "text-orange-400",
   };
 
   return (
@@ -140,6 +145,15 @@ const AdminForms = ({ adminData, onSuccess, chainId }) => {
             chainId={chainId}
           />
         </FormCard>
+
+        <FormCard
+          icon={FaToggleOn}
+          title="Toggle Deposits"
+          description="Enable or disable new deposits on the platform. Control user access to staking functionality."
+          color="orange"
+        >
+          <ToggleDepositsForm onSuccess={onSuccess} />
+        </FormCard>
       </div>
 
       {/* Quick Actions Panel */}
@@ -181,6 +195,20 @@ const AdminForms = ({ adminData, onSuccess, chainId }) => {
               <div>
                 <h4 className="text-white font-medium text-sm">Add Funds</h4>
                 <p className="text-gray-400 text-xs">Increase liquidity</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-600/50 hover:border-gray-500/50 transition-colors cursor-pointer group">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-orange-500/20 rounded-lg group-hover:bg-orange-500/30 transition-colors">
+                <FaToggleOn className="text-orange-400 text-sm" />
+              </div>
+              <div>
+                <h4 className="text-white font-medium text-sm">
+                  Toggle Deposits
+                </h4>
+                <p className="text-gray-400 text-xs">Enable/disable staking</p>
               </div>
             </div>
           </div>

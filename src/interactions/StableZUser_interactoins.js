@@ -592,3 +592,93 @@ export const useRedeem = () => {
     redeemHash: hash,
   };
 };
+
+export const useToggleDeposits = () => {
+  const { chain } = useAccount();
+  const {
+    writeContract,
+    data: hash,
+    isPending,
+    error: toggleError,
+  } = useWriteContract();
+
+  const {
+    data: isDepositsDisabled,
+    refetch: refetchDepositStatus,
+    isLoading: isStatusLoading,
+  } = useReadContract({
+    address: TIMELOCK_NFT_ADDRESS,
+    abi: TimeLockNFT_ABI,
+    functionName: "isDespositsDisabled",
+  });
+
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+  } = useWaitForTransactionReceipt({
+    hash,
+    onSettled(data, error) {
+      if (error) {
+        console.error("Toggle deposits error:", error);
+        toast.error(
+          `Toggle deposits failed: ${error.message.slice(0, 100)}...`,
+          {
+            id: "toggle-deposits-error",
+          }
+        );
+      } else if (data) {
+        toast.success("Deposit status updated successfully!", {
+          id: "toggle-deposits-success",
+        });
+        try {
+          refetchDepositStatus?.();
+        } catch (e) {
+          // ignore refetch errors
+        }
+      }
+    },
+  });
+
+  const toggleDeposits = async () => {
+    if (!chain || chain.id !== baseSepolia.id) {
+      toast.error("Please switch to Base Sepolia network.", {
+        id: "network-error",
+      });
+      return;
+    }
+
+    try {
+      await writeContract({
+        address: TIMELOCK_NFT_ADDRESS,
+        abi: TimeLockNFT_ABI,
+        functionName: "enableOrDisableDeposits",
+        args: [],
+      });
+    } catch (err) {
+      console.error("Toggle deposits error:", err);
+      const isCancelled =
+        err.code === 4001 || /rejected|denied|cancelled/i.test(err.message);
+      toast.error(
+        isCancelled
+          ? "Transaction cancelled"
+          : `Toggle deposits error: ${err.message.slice(0, 100)}...`,
+        {
+          id: "toggle-deposits-error",
+        }
+      );
+    }
+  };
+
+  return {
+    toggleDeposits,
+    isTogglePending: isPending,
+    isToggleConfirming: isConfirming,
+    isToggleConfirmed: isConfirmed,
+    toggleError,
+    toggleHash: hash,
+    // status read
+    isDepositsDisabled: Boolean(isDepositsDisabled),
+    isStatusLoading,
+    refetchDepositStatus,
+  };
+};
