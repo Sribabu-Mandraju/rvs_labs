@@ -221,7 +221,7 @@ const AdminDashboard = () => {
                 />
               )}
 
-              {activeTab === "deposits" && <DepositsTracker />}
+              {activeTab === "deposits" && <DepositsTracker adminData={adminData} />}
 
               {activeTab === "data" && <DataTables adminData={adminData} />}
             </div>

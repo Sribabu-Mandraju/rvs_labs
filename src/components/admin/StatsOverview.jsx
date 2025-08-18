@@ -197,6 +197,131 @@ const StatsOverview = ({ adminData }) => {
         </div>
       </div>
 
+      {/* Allowed Tokens Overview */}
+      <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 lg:p-8 border border-gray-700/50 shadow-2xl">
+        <h3 className="text-lg lg:text-xl font-bold text-white mb-6 flex items-center">
+          <FaCoins className="mr-2 text-yellow-400" />
+          Allowed Tokens
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+          {adminData.allowedTokensWithNames.map((token, index) => {
+            try {
+              const decimals = token?.decimals ? parseInt(token.decimals) : 18;
+              const maxCapValue = Number.parseFloat(
+                ethers.formatUnits(token.maxCap, decimals)
+              );
+
+              // Find corresponding deposited balance
+              const depositedBalance = adminData.depositedBalances.find(
+                (bal) => bal.token === token.address
+              );
+              const balanceValue = depositedBalance
+                ? Number.parseFloat(
+                    ethers.formatUnits(depositedBalance.balance, decimals)
+                  )
+                : 0;
+
+              const utilizationPercentage =
+                maxCapValue > 0 ? (balanceValue / maxCapValue) * 100 : 0;
+
+              return (
+                <div
+                  key={token.address}
+                  className="bg-gray-800/50 rounded-xl p-4 border border-gray-600/50 hover:border-gray-500/50 transition-all duration-300 hover:shadow-lg"
+                >
+                  {/* Token Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-yellow-400/20 rounded-lg flex items-center justify-center">
+                        <FaCoins className="text-yellow-400 text-sm" />
+                      </div>
+                      <span className="text-white font-semibold text-sm lg:text-base">
+                        {token.name}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-1 rounded-full">
+                      {decimals} decimals
+                    </span>
+                  </div>
+
+                  {/* Token Address */}
+                  <div className="mb-3">
+                    <p className="text-xs text-gray-400 mb-1">
+                      Contract Address
+                    </p>
+                    <p className="text-xs font-mono text-gray-300 bg-gray-700/50 p-2 rounded-lg break-all">
+                      {token.address}
+                    </p>
+                  </div>
+
+                  {/* Market Cap */}
+                  <div className="mb-3">
+                    <p className="text-xs text-gray-400 mb-1">
+                      Maximum Market Cap
+                    </p>
+                    <p className="text-lg font-bold text-green-400">
+                      $
+                      {maxCapValue.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                  </div>
+
+                  {/* Current Balance & Utilization */}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs text-gray-400">Current Balance</p>
+                      <p className="text-xs text-gray-400">
+                        {utilizationPercentage.toFixed(1)}% utilized
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold text-white mb-2">
+                      $
+                      {balanceValue.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                    <div className="w-full bg-gray-700/50 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-2 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.min(utilizationPercentage, 100)}%`,
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Raw Values Info */}
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <p>Raw Max Cap: {token.maxCap}</p>
+                    <p>Raw Balance: {depositedBalance?.balance || "0"}</p>
+                    <p>Scaling Factor: 10^{decimals}</p>
+                  </div>
+                </div>
+              );
+            } catch (error) {
+              console.warn(
+                "Error rendering token card for:",
+                token?.name,
+                error
+              );
+              return (
+                <div
+                  key={token?.address || index}
+                  className="bg-gray-800/50 rounded-xl p-4 border border-red-500/30"
+                >
+                  <div className="text-red-400 text-sm">
+                    Error loading {token?.name || "token"} data
+                  </div>
+                </div>
+              );
+            }
+          })}
+        </div>
+      </div>
+
       {/* Token Distribution Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 lg:p-8 border border-gray-700/50 shadow-2xl">
@@ -305,12 +430,13 @@ const StatsOverview = ({ adminData }) => {
                 <span className="text-white font-bold">
                   $
                   {adminData.totalNFTsMinted > 0
-                    ? (
-                        totalBalance / adminData.totalNFTsMinted
-                      ).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })
+                    ? (totalBalance / adminData.totalNFTsMinted).toLocaleString(
+                        undefined,
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }
+                      )
                     : "0.00"}
                 </span>
               </div>

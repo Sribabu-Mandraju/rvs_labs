@@ -10,7 +10,6 @@ import {
 } from "react-icons/fa";
 import { ethers } from "ethers";
 
-
 const DataTable = ({ title, children, icon: Icon, description }) => {
   return (
     <div className="bg-gray-900/60 backdrop-blur-xl rounded-2xl border border-gray-700/50 overflow-hidden shadow-2xl">
@@ -54,7 +53,7 @@ const DataTables = ({ adminData }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPeriod, setFilterPeriod] = useState("all");
 
-  // Helper function to safely format token amounts
+  // Helper function to safely format token amounts with proper decimal scaling
   const formatTokenAmount = (amount, decimals = 18) => {
     try {
       // Ensure decimals is a valid number, default to 18 if invalid
@@ -64,6 +63,19 @@ const DataTables = ({ adminData }) => {
     } catch (error) {
       console.warn("Error formatting token amount:", error);
       return "0";
+    }
+  };
+
+  // Helper function to get token info by address
+  const getTokenInfo = (tokenAddress) => {
+    try {
+      const tokenInfo = adminData?.allowedTokensWithNames?.find(
+        (token) => token.address.toLowerCase() === tokenAddress?.toLowerCase()
+      );
+      return tokenInfo || { name: "Unknown", decimals: "18", maxCap: "0" };
+    } catch (error) {
+      console.warn("Error getting token info:", error);
+      return { name: "Unknown", decimals: "18", maxCap: "0" };
     }
   };
 
@@ -134,10 +146,21 @@ const DataTables = ({ adminData }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-yellow-400 font-bold text-sm">
-                      {token?.maxCap
-                        ? formatTokenAmount(token.maxCap, token.decimals)
-                        : "N/A"}
+                    <div className="space-y-1">
+                      <div className="text-yellow-400 font-bold text-sm">
+                        {token?.maxCap
+                          ? formatTokenAmount(
+                              token.maxCap,
+                              parseInt(token.decimals)
+                            )
+                          : "N/A"}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        Raw: {token?.maxCap || "0"}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Decimals: {token?.decimals || "18"}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -197,7 +220,8 @@ const DataTables = ({ adminData }) => {
             <tbody className="divide-y divide-gray-700/50">
               {adminData.depositedBalances.map((balance, index) => {
                 try {
-                  const tokenInfo = adminData.allowedTokensWithNames[index];
+                  // Get token info using the helper function for better reliability
+                  const tokenInfo = getTokenInfo(balance.token);
                   const decimals = tokenInfo?.decimals
                     ? parseInt(tokenInfo.decimals)
                     : 18;
@@ -234,17 +258,35 @@ const DataTables = ({ adminData }) => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-yellow-400 font-bold text-sm">
-                          $
-                          {balanceValue.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                        <div className="space-y-1">
+                          <div className="text-yellow-400 font-bold text-sm">
+                            {balanceValue.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            Raw: {balance.balance}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Decimals: {decimals}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-gray-300 text-sm">
-                          ${maxCapValue.toLocaleString()}
+                        <div className="space-y-1">
+                          <div className="text-gray-300 text-sm">
+                            {maxCapValue.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            Raw: {tokenInfo?.maxCap || "0"}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Scaling: 10^{decimals}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -371,9 +413,8 @@ const DataTables = ({ adminData }) => {
                   {
                     adminData.depositedBalances.filter((b) => {
                       try {
-                        const index = adminData.depositedBalances.indexOf(b);
-                        const tokenInfo =
-                          adminData.allowedTokensWithNames[index];
+                        // Use the helper function for better reliability
+                        const tokenInfo = getTokenInfo(b.token);
                         const decimals = tokenInfo?.decimals
                           ? parseInt(tokenInfo.decimals)
                           : 18;

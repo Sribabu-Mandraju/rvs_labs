@@ -18,8 +18,9 @@ import { toast } from "react-toastify";
 import { FiRefreshCw } from "react-icons/fi";
 import * as XLSX from "xlsx";
 
-const DepositsTracker = () => {
+const DepositsTracker = ({ adminData }) => {
   const [deposits, setDeposits] = useState([]);
+  console.log("admin data in deposit tracker :", adminData);
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState({
     status: "all",
@@ -126,14 +127,56 @@ const DepositsTracker = () => {
     }
   };
 
-  const formatAmount = (amount, decimals = 18) => {
+  const formatAmount = (amount, tokenAddress) => {
     try {
-      // Ensure decimals is a valid number, default to 18 if invalid
-      const validDecimals =
-        typeof decimals === "number" && !isNaN(decimals) ? decimals : 18;
-      return parseFloat(ethers.formatUnits(amount, validDecimals)).toFixed(2);
+      // Find the token in adminData to get proper decimals
+      const tokenInfo = adminData?.allowedTokensWithNames?.find(
+        (token) => token.address.toLowerCase() === tokenAddress?.toLowerCase()
+      );
+
+      // Use token decimals if found, otherwise default to 18
+      const decimals = tokenInfo ? parseInt(tokenInfo.decimals) : 18;
+
+      // Debug logging for decimal handling
+      if (tokenInfo) {
+        console.log(
+          `Formatting ${amount} for token ${tokenInfo.name} with ${decimals} decimals`
+        );
+      }
+
+      return parseFloat(ethers.formatUnits(amount, decimals)).toFixed(2);
     } catch (error) {
       console.warn("Error formatting amount:", error);
+      return "0.00";
+    }
+  };
+
+  const getTokenInfo = (tokenAddress) => {
+    try {
+      const tokenInfo = adminData?.allowedTokensWithNames?.find(
+        (token) => token.address.toLowerCase() === tokenAddress?.toLowerCase()
+      );
+      return tokenInfo || { name: "Unknown", decimals: "18" };
+    } catch (error) {
+      console.warn("Error getting token info:", error);
+      return { name: "Unknown", decimals: "18" };
+    }
+  };
+
+  const getTotalAmountByToken = (tokenAddress) => {
+    try {
+      const tokenDeposits = deposits.filter(
+        (deposit) =>
+          deposit.depositToken?.toLowerCase() === tokenAddress?.toLowerCase()
+      );
+
+      const totalAmount = tokenDeposits.reduce((sum, deposit) => {
+        return sum + BigInt(deposit.amount || "0");
+      }, BigInt(0));
+
+      return formatAmount(totalAmount.toString(), tokenAddress);
+    } catch (error) {
+      console.warn("Error calculating total amount by token:", error);
       return "0.00";
     }
   };
@@ -209,8 +252,10 @@ const DepositsTracker = () => {
         return {
           "Token ID": deposit.tokenId || "N/A",
           "User Address": deposit.originalMinter || "N/A",
-          "Deposit Token": deposit.depositToken || "N/A",
-          Amount: formatAmount(deposit.amount, 18),
+          "Deposit Token": `${getTokenInfo(deposit.depositToken).name} (${
+            deposit.depositToken
+          })`,
+          Amount: formatAmount(deposit.amount, deposit.depositToken),
           "Period (Months)": deposit.periodMonths || "N/A",
           Status: statusBadge.text,
           "Start Date": formatDate(deposit.startTimestamp),
@@ -346,8 +391,10 @@ const DepositsTracker = () => {
         return {
           "Token ID": deposit.tokenId || "N/A",
           "User Address": deposit.originalMinter || "N/A",
-          "Deposit Token": deposit.depositToken || "N/A",
-          Amount: formatAmount(deposit.amount, 18),
+          "Deposit Token": `${getTokenInfo(deposit.depositToken).name} (${
+            deposit.depositToken
+          })`,
+          Amount: formatAmount(deposit.amount, deposit.depositToken),
           "Period (Months)": deposit.periodMonths || "N/A",
           Status: statusBadge.text,
           "Start Date": formatDate(deposit.startTimestamp),
@@ -521,6 +568,44 @@ const DepositsTracker = () => {
         </div>
       </div>
 
+      {/* Token Balances Overview */}
+      {adminData?.allowedTokensWithNames && (
+        <div className="bg-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50 mb-6">
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+            <FaCoins className="mr-3 text-yellow-400" />
+            Token Balances Overview
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {adminData.allowedTokensWithNames.map((token) => (
+              <div
+                key={token.address}
+                className="bg-gray-800/30 rounded-xl p-4 border border-gray-600/50"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white font-medium">{token.name}</span>
+                  <span className="text-gray-400 text-sm">
+                    {token.decimals} decimals
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-yellow-400 mb-2">
+                  {getTotalAmountByToken(token.address)}
+                </div>
+                <div className="text-gray-400 text-sm">
+                  Max Cap:{" "}
+                  {parseFloat(
+                    ethers.formatUnits(token.maxCap, parseInt(token.decimals))
+                  ).toLocaleString()}
+                </div>
+                <div className="text-gray-400 text-sm">
+                  Contract: {token.address.slice(0, 6)}...
+                  {token.address.slice(-4)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Filters and Search */}
       <div className="bg-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
@@ -635,7 +720,7 @@ const DepositsTracker = () => {
               </select>
             </div>
 
-            <div>
+            {/* <div>
               <label className="block text-gray-300 text-sm font-medium mb-2">
                 Amount Range
               </label>
@@ -659,7 +744,7 @@ const DepositsTracker = () => {
                   className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 text-sm"
                 />
               </div>
-            </div>
+            </div> */}
 
             {/* Custom Date Range */}
             {filters.dateRange === "custom" && (
@@ -781,8 +866,10 @@ const DepositsTracker = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-white font-medium">
-                            {formatAmount(deposit.amount, 6)}{" "}
-                            {/* Default to 18 decimals */}
+                            {formatAmount(deposit.amount, deposit.depositToken)}{" "}
+                            <span className="text-gray-400 text-sm">
+                              {getTokenInfo(deposit.depositToken).name}
+                            </span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

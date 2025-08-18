@@ -69,8 +69,26 @@ function Deposit() {
       (token) => token.address === selectedToken
     );
 
+  // Helper functions - define these before using them
+  const getTokenName = (tokenAddress) => {
+    const token = publicMetaData?.allowedTokens?.find(
+      (t) => t.address === tokenAddress
+    );
+    return token ? token.name : "Tokens";
+  };
+
+  const getTokenDecimals = (tokenAddress) => {
+    const token = publicMetaData?.allowedTokens?.find(
+      (t) => t.address === tokenAddress
+    );
+    return token ? parseInt(token.decimals) : 6;
+  };
+
+  const formatAmount = (value, decimals = 6) =>
+    value > 0 ? (Number(value) / 10 ** decimals).toFixed(2) : "0.00";
+
   const depositAmount = isValidAmount
-    ? BigInt(Math.floor(Number(amount) * 10 ** 6))
+    ? BigInt(Math.floor(Number(amount) * 10 ** getTokenDecimals(selectedToken)))
     : BigInt(0);
   const hasEnoughBalance = tokenBalance >= depositAmount;
   const hasEnoughAllowance = allowance >= depositAmount;
@@ -183,7 +201,7 @@ function Deposit() {
     if (!hasEnoughBalance) {
       toast.error(
         `Insufficient token balance (need ${
-          Number(depositAmount) / 10 ** 6
+          Number(depositAmount) / 10 ** getTokenDecimals(selectedToken)
         } tokens).`,
         {
           id: "balance-error",
@@ -302,18 +320,6 @@ function Deposit() {
     apiCallError,
     apiCallSuccess,
   ]);
-
-  // Format amount for display
-  const formatAmount = (value) =>
-    value > 0 ? (Number(value) / 10 ** 6).toFixed(2) : "0.00";
-
-  // Get token name for display
-  const getTokenName = (tokenAddress) => {
-    const token = publicMetaData?.allowedTokens?.find(
-      (t) => t.address === tokenAddress
-    );
-    return token ? token.name : "Tokens";
-  };
 
   // Calculate potential rewards
   const calculateRewards = () => {
@@ -540,7 +546,18 @@ function Deposit() {
                   <div className="relative">
                     <select
                       value={selectedToken}
-                      onChange={(e) => setSelectedToken(e.target.value)}
+                      onChange={(e) => {
+                        const newToken = e.target.value;
+                        setSelectedToken(newToken);
+                        if (newToken) {
+                          const decimals = getTokenDecimals(newToken);
+                          console.log(
+                            `Selected token: ${getTokenName(
+                              newToken
+                            )} with ${decimals} decimals`
+                          );
+                        }
+                      }}
                       className="w-full p-4 rounded-xl bg-gray-700/50 text-white border border-gray-600/50 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 transition-all duration-300 appearance-none cursor-pointer"
                     >
                       <option value="">Choose a token</option>
@@ -553,10 +570,19 @@ function Deposit() {
                     <FaCoins className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
                   {selectedToken && (
-                    <p className="text-xs text-gray-400">
-                      Balance: {formatAmount(tokenBalance)}{" "}
-                      {getTokenName(selectedToken)}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-xs text-gray-400">
+                        Balance:{" "}
+                        {formatAmount(
+                          tokenBalance,
+                          getTokenDecimals(selectedToken)
+                        )}{" "}
+                        {getTokenName(selectedToken)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Decimals: {getTokenDecimals(selectedToken)}
+                      </p>
+                    </div>
                   )}
                 </div>
 
@@ -609,6 +635,12 @@ function Deposit() {
                     {getTokenName(selectedToken)}
                   </div>
                 </div>
+                {selectedToken && amount && isValidAmount && (
+                  <div className="text-xs text-gray-400">
+                    Raw amount: {depositAmount.toString()} (scaled by 10^
+                    {getTokenDecimals(selectedToken)})
+                  </div>
+                )}
                 {/* {isValidAmount && (
                   <div className="bg-yellow-400/10 border border-yellow-400/20 rounded-lg p-3">
                     <div className="flex items-center space-x-2 mb-1">
@@ -790,17 +822,29 @@ function Deposit() {
                   </h3>
                 </div>
                 <div className="space-y-2">
-                  {publicMetaData.depositedBalances.map((bal, index) => (
-                    <div
-                      key={bal.token}
-                      className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
-                    >
-                      <span className="text-sm text-gray-300">{bal.name}</span>
-                      <span className="text-sm font-semibold text-white">
-                        {formatAmount(bal.balance)}
-                      </span>
-                    </div>
-                  ))}
+                  {publicMetaData.depositedBalances.map((bal, index) => {
+                    // Find the token info to get decimals
+                    const tokenInfo = publicMetaData.allowedTokens.find(
+                      (token) => token.address === bal.token
+                    );
+                    const decimals = tokenInfo
+                      ? parseInt(tokenInfo.decimals)
+                      : 6;
+
+                    return (
+                      <div
+                        key={bal.token}
+                        className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
+                      >
+                        <span className="text-sm text-gray-300">
+                          {bal.name}
+                        </span>
+                        <span className="text-sm font-semibold text-white">
+                          {formatAmount(bal.balance, decimals)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
