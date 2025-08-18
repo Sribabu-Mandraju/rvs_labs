@@ -106,7 +106,7 @@ function Deposit() {
     const fetchMetaData = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:3000/lockTimeNFT/publicMetaData"
+          "https://locknft.onrender.com/lockTimeNFT/publicMetaData"
         );
         if (response.data.success) {
           setPublicMetaData(response.data);
@@ -419,7 +419,136 @@ function Deposit() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        {/* Staking Information Dashboard */}
+        {publicMetaData && (
+          <div className="mt-12">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-white mb-2">
+                Platform Overview
+              </h2>
+              <p className="text-gray-400">
+                Current staking statistics and information
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Allowed Tokens */}
+              <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-2xl">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-400/10 rounded-xl flex items-center justify-center">
+                    <FaCoins className="text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Supported Tokens
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  {publicMetaData.allowedTokens.map((token, index) => (
+                    <div
+                      key={token.address}
+                      className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
+                    >
+                      <span className="text-sm text-gray-300">
+                        {token.name}
+                      </span>
+                      <span className="text-xs text-gray-500 font-mono">
+                        {token.address.slice(0, 6)}...{token.address.slice(-4)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Total Deposited */}
+              <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-2xl">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-green-400/10 rounded-xl flex items-center justify-center">
+                    <FaWater className="text-green-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Total Value Locked
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  {publicMetaData.depositedBalances.map((bal, index) => {
+                    // Find the token info to get decimals
+                    const tokenInfo = publicMetaData.allowedTokens.find(
+                      (token) => token.address === bal.token
+                    );
+                    const decimals = tokenInfo
+                      ? parseInt(tokenInfo.decimals)
+                      : 6;
+
+                    return (
+                      <div
+                        key={bal.token}
+                        className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
+                      >
+                        <span className="text-sm text-gray-300">
+                          {bal.name}
+                        </span>
+                        <span className="text-sm font-semibold text-white">
+                          {formatAmount(bal.balance, decimals)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Platform Stats */}
+              <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-2xl md:col-span-2 lg:col-span-1">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-purple-400/10 rounded-xl flex items-center justify-center">
+                    <FaChartLine className="text-purple-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Platform Stats
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-400">Max ROI</span>
+                    <span className="text-sm font-semibold text-green-400">
+                      {Math.max(
+                        Number(publicMetaData.roi1m),
+                        Number(publicMetaData.roi2m),
+                        Number(publicMetaData.roi3m)
+                      ) / 100}
+                      %
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-400">Lock Periods</span>
+                    <span className="text-sm font-semibold text-white">
+                      1-3 Months
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-400">Security</span>
+                    <span className="text-sm font-semibold text-yellow-400">
+                      NFT Locked
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {!publicMetaData && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center space-x-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+              <span className="text-lg text-gray-400">
+                Loading platform data...
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-3 mt-3 gap-8">
           {/* Left Column - Stats & Info */}
           <div className="lg:col-span-1 space-y-6">
             {/* Wallet Status Card */}
@@ -770,135 +899,6 @@ function Deposit() {
             </div>
           </div>
         </div>
-
-        {/* Staking Information Dashboard */}
-        {publicMetaData && (
-          <div className="mt-12">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-white mb-2">
-                Platform Overview
-              </h2>
-              <p className="text-gray-400">
-                Current staking statistics and information
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Allowed Tokens */}
-              <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-2xl">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 bg-blue-400/10 rounded-xl flex items-center justify-center">
-                    <FaCoins className="text-blue-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Supported Tokens
-                  </h3>
-                </div>
-                <div className="space-y-2">
-                  {publicMetaData.allowedTokens.map((token, index) => (
-                    <div
-                      key={token.address}
-                      className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
-                    >
-                      <span className="text-sm text-gray-300">
-                        {token.name}
-                      </span>
-                      <span className="text-xs text-gray-500 font-mono">
-                        {token.address.slice(0, 6)}...{token.address.slice(-4)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Total Deposited */}
-              <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-2xl">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 bg-green-400/10 rounded-xl flex items-center justify-center">
-                    <FaWater className="text-green-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Total Value Locked
-                  </h3>
-                </div>
-                <div className="space-y-2">
-                  {publicMetaData.depositedBalances.map((bal, index) => {
-                    // Find the token info to get decimals
-                    const tokenInfo = publicMetaData.allowedTokens.find(
-                      (token) => token.address === bal.token
-                    );
-                    const decimals = tokenInfo
-                      ? parseInt(tokenInfo.decimals)
-                      : 6;
-
-                    return (
-                      <div
-                        key={bal.token}
-                        className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
-                      >
-                        <span className="text-sm text-gray-300">
-                          {bal.name}
-                        </span>
-                        <span className="text-sm font-semibold text-white">
-                          {formatAmount(bal.balance, decimals)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Platform Stats */}
-              <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-2xl md:col-span-2 lg:col-span-1">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 bg-purple-400/10 rounded-xl flex items-center justify-center">
-                    <FaChartLine className="text-purple-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Platform Stats
-                  </h3>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Max ROI</span>
-                    <span className="text-sm font-semibold text-green-400">
-                      {Math.max(
-                        Number(publicMetaData.roi1m),
-                        Number(publicMetaData.roi2m),
-                        Number(publicMetaData.roi3m)
-                      ) / 100}
-                      %
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Lock Periods</span>
-                    <span className="text-sm font-semibold text-white">
-                      1-3 Months
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Security</span>
-                    <span className="text-sm font-semibold text-yellow-400">
-                      NFT Locked
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Loading State */}
-        {!publicMetaData && (
-          <div className="flex items-center justify-center py-12">
-            <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
-              <span className="text-lg text-gray-400">
-                Loading platform data...
-              </span>
-            </div>
-          </div>
-        )}
       </main>
 
       {/* Footer */}

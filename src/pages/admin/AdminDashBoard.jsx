@@ -45,7 +45,7 @@ const AdminDashboard = () => {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `http://localhost:3000/lockTimeNFT/adminMetaData?userAddress=${address}`
+          `https://locknft.onrender.com/lockTimeNFT/adminMetaData?userAddress=${address}`
         );
         const data = await response.json();
 
@@ -79,7 +79,7 @@ const AdminDashboard = () => {
         setIsLoading(true);
         try {
           const response = await fetch(
-            `http://localhost:3000/lockTimeNFT/adminMetaData?userAddress=${address}`
+            `https://locknft.onrender.com/lockTimeNFT/adminMetaData?userAddress=${address}`
           );
           const data = await response.json();
 
@@ -221,7 +221,9 @@ const AdminDashboard = () => {
                 />
               )}
 
-              {activeTab === "deposits" && <DepositsTracker adminData={adminData} />}
+              {activeTab === "deposits" && (
+                <DepositsTracker adminData={adminData} />
+              )}
 
               {activeTab === "data" && <DataTables adminData={adminData} />}
             </div>

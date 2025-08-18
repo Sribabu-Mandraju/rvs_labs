@@ -57,7 +57,9 @@ const DepositsTracker = ({ adminData }) => {
         }
       });
 
-      const response = await fetch(`http://localhost:3000/deposits/?${params}`);
+      const response = await fetch(
+        `https://locknft.onrender.com/deposits/?${params}`
+      );
       const data = await response.json();
 
       if (data.success) {
@@ -233,7 +235,9 @@ const DepositsTracker = ({ adminData }) => {
         }
       });
 
-      const response = await fetch(`http://localhost:3000/deposits/?${params}`);
+      const response = await fetch(
+        `https://locknft.onrender.com/deposits/?${params}`
+      );
       const data = await response.json();
 
       if (!data.success) {
@@ -263,7 +267,7 @@ const DepositsTracker = ({ adminData }) => {
           "Time Remaining": timeRemaining,
           "Transaction Hash": deposit.transactionHash || "N/A",
           "Is Claimed": deposit.isClaimed ? "Yes" : "No",
-          "Proposal ID": deposit.proposalId || "N/A",
+          // "Proposal ID": deposit.proposalId || "N/A",
         };
       });
 
@@ -402,7 +406,7 @@ const DepositsTracker = ({ adminData }) => {
           "Time Remaining": timeRemaining,
           "Transaction Hash": deposit.transactionHash || "N/A",
           "Is Claimed": deposit.isClaimed ? "Yes" : "No",
-          "Proposal ID": deposit.proposalId || "N/A",
+          // "Proposal ID": deposit.proposalId || "N/A",
         };
       });
 

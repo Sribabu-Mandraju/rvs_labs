@@ -165,7 +165,7 @@ const StatsOverview = ({ adminData }) => {
       </div>
 
       {/* Enhanced Contract Information */}
-      <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 lg:p-8 border border-gray-700/50 shadow-2xl">
+      {/* <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 lg:p-8 border border-gray-700/50 shadow-2xl">
         <h2 className="text-xl lg:text-2xl font-bold text-white mb-6 flex items-center">
           <FaShieldAlt className="mr-3 text-yellow-400 text-xl lg:text-2xl" />
           Contract Information
@@ -195,7 +195,7 @@ const StatsOverview = ({ adminData }) => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Allowed Tokens Overview */}
       <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 lg:p-8 border border-gray-700/50 shadow-2xl">
@@ -324,7 +324,7 @@ const StatsOverview = ({ adminData }) => {
 
       {/* Token Distribution Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-        <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 lg:p-8 border border-gray-700/50 shadow-2xl">
+        {/* <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 lg:p-8 border border-gray-700/50 shadow-2xl">
           <h3 className="text-lg lg:text-xl font-bold text-white mb-4 flex items-center">
             <FaCoins className="mr-2 text-yellow-400" />
             Token Distribution
@@ -402,9 +402,9 @@ const StatsOverview = ({ adminData }) => {
               </div>
             )}
           </div>
-        </div>
+        </div> */}
 
-        <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 lg:p-8 border border-gray-700/50 shadow-2xl">
+        {/* <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 lg:p-8 border border-gray-700/50 shadow-2xl">
           <h3 className="text-lg lg:text-xl font-bold text-white mb-4 flex items-center">
             <FaCube className="mr-2 text-green-400" />
             Performance Metrics
@@ -474,7 +474,7 @@ const StatsOverview = ({ adminData }) => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
