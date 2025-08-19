@@ -77,7 +77,7 @@ const SetROIPage = () => {
         <div>
           <p>Transaction submitted!</p>
           <a
-            href={`https://sepolia.basescan.org/tx/${tx.hash}`}
+            href={`https://basescan.org/tx/${tx.hash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-yellow-400 hover:text-yellow-300"
@@ -280,7 +280,7 @@ const SetROIPage = () => {
                       </p>
                       {txStatus.hash && (
                         <a
-                          href={`https://sepolia.basescan.org/tx/${txStatus.hash}`}
+                          href={`https://basescan.org/tx/${txStatus.hash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-yellow-400 hover:text-yellow-300 text-xs mt-0.5 flex items-center"

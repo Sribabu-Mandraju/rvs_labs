@@ -351,7 +351,7 @@ const DepositPage = () => {
                         </span>
                         {usdtAddress && (
                           <a
-                            // href={`https://sepolia.basescan.org/address/${usdtAddress}`}
+                            // href={`https://basescan.org/address/${usdtAddress}`}
                             href={`https://basescan.org/address/${usdtAddress}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -398,7 +398,7 @@ const DepositPage = () => {
                         </p>
                         {txStatus.hash && (
                           <a
-                            href={`https://sepolia.basescan.org/tx/${txStatus.hash}`}
+                            href={`https://basescan.org/tx/${txStatus.hash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-yellow-400 hover:text-yellow-300 text-xs mt-1 block"

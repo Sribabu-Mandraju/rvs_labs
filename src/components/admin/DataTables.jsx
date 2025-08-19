@@ -165,7 +165,7 @@ const DataTables = ({ adminData }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <ExternalLink
-                      href={`https://sepolia.basescan.org/address/${token?.address}`}
+                      href={`https://basescan.org/address/${token?.address}`}
                     >
                       <span className="text-sm">View on Explorer</span>
                     </ExternalLink>
@@ -312,7 +312,7 @@ const DataTables = ({ adminData }) => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <ExternalLink
-                          href={`https://sepolia.basescan.org/address/${balance.token}`}
+                          href={`https://basescan.org/address/${balance.token}`}
                         >
                           <span className="text-sm">View Token</span>
                         </ExternalLink>
@@ -453,7 +453,7 @@ const DataTables = ({ adminData }) => {
               </div>
               <div>
                 <p className="text-gray-400 text-xs font-medium">Network</p>
-                <p className="text-white font-bold text-sm">Base Sepolia</p>
+                <p className="text-white font-bold text-sm">Base</p>
               </div>
             </div>
           </div>

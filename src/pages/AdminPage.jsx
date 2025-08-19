@@ -164,7 +164,7 @@ const AdminPage = () => {
                           {token}
                         </span>
                         <a
-                          href={`https://sepolia.basescan.org/address/${token}`}
+                          href={`https://basescan.org/address/${token}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-yellow-400 hover:text-yellow-300 text-sm"
@@ -199,7 +199,7 @@ const AdminPage = () => {
                           <tr key={index} className="border-t border-gray-700">
                             <td className="px-4 py-2">
                               <a
-                                href={`https://sepolia.basescan.org/address/${balance.token}`}
+                                href={`https://basescan.org/address/${balance.token}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-yellow-400 hover:text-yellow-300 truncate"
@@ -252,7 +252,7 @@ const AdminPage = () => {
                             <td className="px-4 py-2">{deposit.tokenId}</td>
                             <td className="px-4 py-2">
                               <a
-                                href={`https://sepolia.basescan.org/address/${deposit.depositToken}`}
+                                href={`https://basescan.org/address/${deposit.depositToken}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-yellow-400 hover:text-yellow-300 truncate"
@@ -282,7 +282,7 @@ const AdminPage = () => {
                             </td>
                             <td className="px-4 py-2">
                               <a
-                                href={`https://sepolia.basescan.org/address/${deposit.originalMinter}`}
+                                href={`https://basescan.org/address/${deposit.originalMinter}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-yellow-400 hover:text-yellow-300 truncate"
