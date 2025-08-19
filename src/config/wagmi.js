@@ -1,25 +1,3 @@
-// import { createConfig, http } from 'wagmi';
-// import { base, baseSepolia } from 'wagmi/chains';
-// import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors';
-
-// const projectId = 'ca703cec4e1cc82b7e8a1342fed93c90';
-
-// export const wagmiConfig = createConfig({
-//   chains: [baseSepolia, base],
-//   connectors: [
-//     injected({ target: 'metaMask' }),
-//     walletConnect({ projectId, showQrModal: true }), // Enable QR code for mobile
-//     coinbaseWallet({
-//       appName: 'My Awesome DApp', // Update this
-//       darkMode: true,
-//     }),
-//   ],
-//   transports: {
-//     [baseSepolia.id]: http(import.meta.env.VITE_BASE_SEPOLIA_RPC || 'https://sepolia.base.org'),
-//     [base.id]: http(import.meta.env.VITE_BASE_RPC || 'https://mainnet.base.org'),
-//   },
-// });
-
 import { createConfig, http } from "wagmi";
 import { base, baseSepolia } from "wagmi/chains";
 import {
@@ -55,7 +33,7 @@ export const wagmiConfig = createConfig({
 createWeb3Modal({
   wagmiConfig,
   projectId,
-  defaultChain: baseSepolia, // Default to Base Sepolia for testing
+  defaultChain: base, // Default to Base Mainnet
   enableAnalytics: true, // Optional: enable analytics
   // chains,
   themeMode: "dark",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAccount, useChainId } from "wagmi";
-import { base, baseSepolia } from "wagmi/chains";
+import { base } from "wagmi/chains";
 import { toast } from "react-toastify";
 import {
   FaArrowLeft,
@@ -19,7 +19,7 @@ import DataTables from "../../components/admin/DataTables";
 import DepositsTracker from "../../components/admin/DepositsTracker";
 import LoadingSpinner from "../../components/admin/LoadingSpinner";
 
-const chains = [base, baseSepolia];
+const chains = [base];
 const getChainName = (chainId) => {
   const chain = chains.find((c) => c.id === chainId);
   return chain ? chain.name : "Unknown Network";
@@ -45,7 +45,7 @@ const AdminDashboard = () => {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `https://locknft.onrender.com/lockTimeNFT/adminMetaData?userAddress=${address}`
+          `https://locknft.onrender.com//lockTimeNFT/adminMetaData?userAddress=${address}`
         );
         const data = await response.json();
 
@@ -79,7 +79,7 @@ const AdminDashboard = () => {
         setIsLoading(true);
         try {
           const response = await fetch(
-            `https://locknft.onrender.com/lockTimeNFT/adminMetaData?userAddress=${address}`
+            `https://locknft.onrender.com//lockTimeNFT/adminMetaData?userAddress=${address}`
           );
           const data = await response.json();
 

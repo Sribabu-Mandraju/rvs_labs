@@ -25,11 +25,11 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/deposit" element={<Deposit />} />
-          <Route path="/redeem" element={<UserDepositsDashboard />} />
+          {/* <Route path="/redeem" element={<UserDepositsDashboard />} /> */}
           <Route path="/user-deposits" element={<UserDepositsDashboard />} />
-          <Route path="/set-roi" element={<SetROIPage />} />
+          {/* <Route path="/set-roi" element={<SetROIPage />} /> */}
           <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/depositPage" element={<Deposit />} />
+          {/* <Route path="/depositPage" element={<Deposit />} /> */}
           <Route path="/*" element={<NotFoundPage />} />
         </Routes>
       </Router>

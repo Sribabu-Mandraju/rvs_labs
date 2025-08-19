@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { useDeposit } from "../interactions/StableZUser_interactoins";
-import { baseSepolia } from "wagmi/chains";
+import { base } from "wagmi/chains";
 import toast from "react-hot-toast";
 import axios from "axios";
 import {
@@ -59,7 +59,7 @@ function Deposit() {
   const hasEnoughGas = balanceData && balanceData.value >= 0.001 * 10 ** 18;
 
   // Validate inputs
-  const isCorrectNetwork = chain && chain.id === baseSepolia.id;
+  const isCorrectNetwork = chain && chain.id === base.id;
   const isValidAmount =
     amount !== "" && Number(amount) > 0 && Number.isFinite(Number(amount));
   const isValidPeriod = ["1", "2", "3"].includes(periodMonths);
@@ -106,7 +106,7 @@ function Deposit() {
     const fetchMetaData = async () => {
       try {
         const response = await axios.get(
-          "https://locknft.onrender.com/lockTimeNFT/publicMetaData"
+          "https://locknft.onrender.com//lockTimeNFT/publicMetaData"
         );
         if (response.data.success) {
           setPublicMetaData(response.data);
@@ -171,7 +171,7 @@ function Deposit() {
       return;
     }
     if (!isCorrectNetwork) {
-      toast.error("Please switch to Base Sepolia network.", {
+      toast.error("Please switch to Base Mainnet network.", {
         id: "network-error",
       });
       return;
@@ -586,7 +586,7 @@ function Deposit() {
                   {!isCorrectNetwork && (
                     <div className="flex items-center space-x-2 text-red-400">
                       <FaExclamationTriangle className="text-sm" />
-                      <span className="text-sm">Switch to Base Sepolia</span>
+                      <span className="text-sm">Switch to Base Mainnet</span>
                     </div>
                   )}
                 </div>
@@ -852,7 +852,7 @@ function Deposit() {
                   <div className="flex items-center space-x-2">
                     <FaExclamationTriangle className="text-yellow-400" />
                     <span className="text-sm text-yellow-400">
-                      Please switch to Base Sepolia network
+                      Please switch to Base Mainnet network
                     </span>
                   </div>
                 </div>

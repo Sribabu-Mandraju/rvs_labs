@@ -5,14 +5,14 @@ import {
   useAccount,
   useReadContract,
 } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
+import { base } from "wagmi/chains";
 import { toast } from "react-toastify";
 import TimeLockNFTStakingABI from "../abis/stablz.json";
 import { ethers } from "ethers";
 import IERC20ABI from "../abis/ierc20.json";
 // Replace with your deployed contract address
 const TIME_LOCK_NFT_STAKING_ADDRESS =
-  "0x27f3e17C1007Cbd7961042Aaea756A2c12726593";
+  "0x3f1B78Ac9121252652f4e27CeE96acAD097d060c";
 
 export const useAddAllowedToken = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
@@ -21,13 +21,13 @@ export const useAddAllowedToken = () => {
     isSuccess: isConfirmed,
   } = useWaitForTransactionReceipt({ hash });
   const { address, chain } = useAccount();
-  const chainId = chain?.id || baseSepolia.id;
+  const chainId = chain?.id || base.id;
 
   const addAllowedToken = async (tokenAddress, cap) => {
     if (!address) {
       throw new Error("Wallet not connected");
     }
-    if (chainId !== baseSepolia.id) {
+    if (chainId !== base.id) {
       throw new Error("Invalid network");
     }
     if (!ethers.isAddress(tokenAddress)) {
@@ -129,7 +129,7 @@ export const useSetROIs = () => {
     isSuccess: isConfirmed,
   } = useWaitForTransactionReceipt({ hash });
   const { address, chain } = useAccount();
-  const chainId = chain?.id || baseSepolia.id;
+  const chainId = chain?.id || base.id;
 
   const setROIs = async (roi1m, roi2m, roi3m) => {
     if (!address) {
@@ -144,8 +144,8 @@ export const useSetROIs = () => {
       });
       throw new Error("Wallet not connected");
     }
-    if (chainId !== baseSepolia.id) {
-      toast.error("Switch to Base Sepolia", {
+    if (chainId !== base.id) {
+      toast.error("Switch to Base Mainnet", {
         position: "bottom-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -258,7 +258,7 @@ export const useCollectTokensNuclear = () => {
     isSuccess: isConfirmed,
   } = useWaitForTransactionReceipt({ hash });
   const { address, chain } = useAccount();
-  const chainId = chain?.id || baseSepolia.id;
+  const chainId = chain?.id || base.id;
 
   const collectTokensNuclear = async (tokenAddress, amount) => {
     if (!address) {
@@ -273,8 +273,8 @@ export const useCollectTokensNuclear = () => {
       });
       throw new Error("Wallet not connected");
     }
-    if (chainId !== baseSepolia.id) {
-      toast.error("Switch to Base Sepolia", {
+    if (chainId !== base.id) {
+      toast.error("Switch to Base Mainnet", {
         position: "bottom-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -401,13 +401,13 @@ export const useUpdateMaxCap = () => {
     isSuccess: isConfirmed,
   } = useWaitForTransactionReceipt({ hash });
   const { address, chain } = useAccount();
-  const chainId = chain?.id || baseSepolia.id;
+  const chainId = chain?.id || base.id;
 
   const updateMaxCap = async (tokenAddress, cap) => {
     if (!address) {
       throw new Error("Wallet not connected");
     }
-    if (chainId !== baseSepolia.id) {
+    if (chainId !== base.id) {
       throw new Error("Invalid network");
     }
     if (!ethers.isAddress(tokenAddress)) {
@@ -612,7 +612,7 @@ export const useSingleTokenMetadata = (tokenAddress, chainId) => {
 
 export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
   const { address, chain } = useAccount();
-  const chainId = chain?.id || baseSepolia.id;
+  const chainId = chain?.id || base.id;
 
   // Separate writeContract instances for approve and deposit
   const {
@@ -676,8 +676,8 @@ export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
       toast.error("Connect wallet", { id: "connect-wallet" });
       throw new Error("Wallet not connected");
     }
-    if (chainId !== baseSepolia.id) {
-      toast.error("Switch to Base Sepolia", { id: "network-error" });
+    if (chainId !== base.id) {
+      toast.error("Switch to Base Mainnet", { id: "network-error" });
       throw new Error("Invalid network");
     }
     if (!ethers.isAddress(tokenAddress)) {
@@ -717,8 +717,8 @@ export const useApproveAndDepositFunds = (tokenAddress, amountInWei) => {
       toast.error("Connect wallet", { id: "connect-wallet" });
       throw new Error("Wallet not connected");
     }
-    if (chainId !== baseSepolia.id) {
-      toast.error("Switch to Base Sepolia", { id: "network-error" });
+    if (chainId !== base.id) {
+      toast.error("Switch to Base Mainnet", { id: "network-error" });
       throw new Error("Invalid network");
     }
     if (!ethers.isAddress(tokenAddress)) {

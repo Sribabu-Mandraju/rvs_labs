@@ -4,14 +4,14 @@ import {
   useAccount,
   useReadContract,
 } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
+import { base } from "wagmi/chains";
 import { useEffect, useRef, useState } from "react";
 import USDT_ABI from "../abis/ierc20.json";
 import TimeLockNFT_ABI from "../abis/stablz.json";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const TIMELOCK_NFT_ADDRESS = "0x27f3e17C1007Cbd7961042Aaea756A2c12726593"; // Replace with your contract address
+const TIMELOCK_NFT_ADDRESS = "0x3f1B78Ac9121252652f4e27CeE96acAD097d060c"; // Replace with your contract address
 
 // Function to parse deposit event and extract tokenId
 const parseDepositEvent = (receipt) => {
@@ -143,7 +143,7 @@ const createDepositRecord = async (
     );
 
     const response = await axios.post(
-      "https://locknft.onrender.com/deposits",
+      "https://locknft.onrender.com//deposits",
       {
         proposalId,
         transactionHash,
@@ -231,7 +231,7 @@ export const useDeposit = (selectedToken) => {
     data: depositReceipt,
   } = useWaitForTransactionReceipt({ hash: depositHash });
   const { address, chain } = useAccount();
-  const chainId = chain?.id || baseSepolia.id;
+  const chainId = chain?.id || base.id;
 
   // State for API call tracking
   const [isApiCallPending, setIsApiCallPending] = useState(false);
@@ -267,8 +267,8 @@ export const useDeposit = (selectedToken) => {
     if (!address) {
       throw new Error("Wallet not connected");
     }
-    if (chainId !== baseSepolia.id) {
-      throw new Error("Please switch to Base Sepolia network");
+    if (chainId !== base.id) {
+      throw new Error("Please switch to Base Mainnet network");
     }
     if (!selectedToken) {
       throw new Error("No token selected");
@@ -298,8 +298,8 @@ export const useDeposit = (selectedToken) => {
     if (!address) {
       throw new Error("Wallet not connected");
     }
-    if (chainId !== baseSepolia.id) {
-      throw new Error("Please switch to Base Sepolia network");
+    if (chainId !== base.id) {
+      throw new Error("Please switch to Base Mainnet network");
     }
     if (!token) {
       throw new Error("Invalid token address");
@@ -554,8 +554,8 @@ export const useRedeem = () => {
   });
 
   const redeem = async (tokenId) => {
-    if (!chain || chain.id !== baseSepolia.id) {
-      toast.error("Please switch to Base Sepolia network.", {
+    if (!chain || chain.id !== base.id) {
+      toast.error("Please switch to Base Mainnet network.", {
         id: "network-error",
       });
       return;
@@ -640,8 +640,8 @@ export const useToggleDeposits = () => {
   });
 
   const toggleDeposits = async () => {
-    if (!chain || chain.id !== baseSepolia.id) {
-      toast.error("Please switch to Base Sepolia network.", {
+    if (!chain || chain.id !== base.id) {
+      toast.error("Please switch to Base Mainnet network.", {
         id: "network-error",
       });
       return;
