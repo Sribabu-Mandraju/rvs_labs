@@ -11,7 +11,7 @@ import TimeLockNFT_ABI from "../abis/stablz.json";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const TIMELOCK_NFT_ADDRESS = "0x3f1B78Ac9121252652f4e27CeE96acAD097d060c"; // Replace with your contract address
+const TIMELOCK_NFT_ADDRESS = "0xC7Ac55fF5C832fDc8572C5F0C6E203BB329Af35B"; // Replace with your contract address
 
 // Function to parse deposit event and extract tokenId
 const parseDepositEvent = (receipt) => {
@@ -143,7 +143,7 @@ const createDepositRecord = async (
     );
 
     const response = await axios.post(
-      "https://locknft.onrender.com//deposits",
+      "https://locknft.onrender.com/deposits",
       {
         proposalId,
         transactionHash,
@@ -609,7 +609,7 @@ export const useToggleDeposits = () => {
   } = useReadContract({
     address: TIMELOCK_NFT_ADDRESS,
     abi: TimeLockNFT_ABI,
-    functionName: "isDespositsDisabled",
+    functionName: "isDepositsDisabled",
   });
 
   const {

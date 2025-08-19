@@ -58,7 +58,7 @@ const DepositsTracker = ({ adminData }) => {
       });
 
       const response = await fetch(
-        `https://locknft.onrender.com//deposits/?${params}`
+        `https://locknft.onrender.com/deposits/?${params}`
       );
       const data = await response.json();
 
@@ -236,7 +236,7 @@ const DepositsTracker = ({ adminData }) => {
       });
 
       const response = await fetch(
-        `https://locknft.onrender.com//deposits/?${params}`
+        `https://locknft.onrender.com/deposits/?${params}`
       );
       const data = await response.json();
 

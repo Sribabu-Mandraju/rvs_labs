@@ -12,7 +12,7 @@ import { ethers } from "ethers";
 import IERC20ABI from "../abis/ierc20.json";
 // Replace with your deployed contract address
 const TIME_LOCK_NFT_STAKING_ADDRESS =
-  "0x3f1B78Ac9121252652f4e27CeE96acAD097d060c";
+  "0xC7Ac55fF5C832fDc8572C5F0C6E203BB329Af35B";
 
 export const useAddAllowedToken = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();

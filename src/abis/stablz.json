@@ -323,7 +323,7 @@
   },
   {
     "type": "function",
-    "name": "isDespositsDisabled",
+    "name": "isDepositsDisabled",
     "inputs": [],
     "outputs": [
       {
