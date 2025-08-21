@@ -84,8 +84,11 @@ function Deposit() {
     return token ? parseInt(token.decimals) : 6;
   };
 
-  const formatAmount = (value, decimals = 6) =>
-    value > 0 ? (Number(value) / 10 ** decimals).toFixed(2) : "0.00";
+  const formatAmount = (value, tokenAddress) => {
+    if (!tokenAddress || value <= 0) return "0.00";
+    const decimals = getTokenDecimals(tokenAddress);
+    return (Number(value) / 10 ** decimals).toFixed(2);
+  };
 
   const depositAmount = isValidAmount
     ? BigInt(Math.floor(Number(amount) * 10 ** getTokenDecimals(selectedToken)))
@@ -488,7 +491,7 @@ function Deposit() {
                           {bal.name}
                         </span>
                         <span className="text-sm font-semibold text-white">
-                          {formatAmount(bal.balance, decimals)}
+                          {formatAmount(bal.balance, bal.token)}
                         </span>
                       </div>
                     );
@@ -701,11 +704,7 @@ function Deposit() {
                   {selectedToken && (
                     <div className="space-y-1">
                       <p className="text-xs text-gray-400">
-                        Balance:{" "}
-                        {formatAmount(
-                          tokenBalance,
-                          getTokenDecimals(selectedToken)
-                        )}{" "}
+                        Balance: {formatAmount(tokenBalance, selectedToken)}{" "}
                         {getTokenName(selectedToken)}
                       </p>
                       <p className="text-xs text-gray-500">
