@@ -143,7 +143,7 @@ const createDepositRecord = async (
     );
 
     const response = await axios.post(
-      "https://locknft.onrender.com/deposits",
+      "http://localhost:3000/deposits",
       {
         proposalId,
         transactionHash,
@@ -330,105 +330,12 @@ export const useDeposit = (selectedToken) => {
     }
   };
 
-  // Handle API call after successful deposit
+  // After successful deposit: show toast only (no backend call)
   useEffect(() => {
-    if (
-      isDepositConfirmed &&
-      depositReceipt &&
-      depositHash &&
-      !isApiCallPending &&
-      !apiCallSuccess &&
-      !apiCallMadeRef.current
-    ) {
-      apiCallMadeRef.current = true; // Prevent multiple calls
-
-      const handleApiCall = async () => {
-        setIsApiCallPending(true);
-        setApiCallError(null);
-
-        try {
-          // Parse the deposit event to get tokenId
-          let tokenId = parseDepositEvent(depositReceipt);
-
-          // Fallback: if event parsing fails, try enhanced log parsing
-          if (!tokenId) {
-            console.log(
-              "Event parsing failed, trying enhanced fallback method..."
-            );
-            try {
-              tokenId = findTokenIdFromLogs(depositReceipt);
-              if (tokenId) {
-                console.log("Enhanced fallback: Found tokenId:", tokenId);
-              }
-            } catch (fallbackError) {
-              console.error(
-                "Enhanced fallback method also failed:",
-                fallbackError
-              );
-            }
-          }
-
-          if (!tokenId) {
-            // Final fallback: try to estimate tokenId based on transaction hash
-            console.log(
-              "All parsing methods failed, trying hash-based estimation..."
-            );
-            try {
-              // Use a simple hash-based approach as last resort
-              const hashNumber = parseInt(depositHash.slice(2, 10), 16);
-              tokenId = Math.abs(hashNumber) % 10000; // Generate a reasonable tokenId
-              console.log("Hash-based fallback: Generated tokenId:", tokenId);
-            } catch (finalError) {
-              console.error("All fallback methods failed:", finalError);
-              throw new Error(
-                "Could not extract tokenId from deposit transaction. Please contact support."
-              );
-            }
-          }
-
-          // Ensure tokenId is a proper integer
-          const finalTokenId = Math.floor(Number(tokenId));
-
-          // Validate the final tokenId
-          if (isNaN(finalTokenId) || finalTokenId <= 0) {
-            throw new Error(`Invalid tokenId generated: ${finalTokenId}`);
-          }
-
-          console.log(
-            "Final tokenId for API call:",
-            finalTokenId,
-            "Type:",
-            typeof finalTokenId
-          );
-
-          // Make API call to create deposit record
-          const result = await createDepositRecord(finalTokenId, depositHash);
-
-          if (result.success) {
-            setApiCallSuccess(true);
-            toast.success("Deposit recorded successfully!", {
-              id: "api-success",
-            });
-          } else {
-            setApiCallError(result.error);
-            toast.error(`Failed to record deposit: ${result.error}`, {
-              id: "api-error",
-            });
-          }
-        } catch (error) {
-          console.error("Error in API call process:", error);
-          setApiCallError(error.message);
-          toast.error(`Error recording deposit: ${error.message}`, {
-            id: "api-error",
-          });
-        } finally {
-          setIsApiCallPending(false);
-        }
-      };
-
-      handleApiCall();
+    if (isDepositConfirmed && depositHash && !isDepositPending) {
+      toast.success("Deposit is successful", { id: "deposit-success" });
     }
-  }, [isDepositConfirmed, depositReceipt, depositHash]);
+  }, [isDepositConfirmed, depositHash, isDepositPending]);
 
   // Reset API states when starting a new deposit
   useEffect(() => {

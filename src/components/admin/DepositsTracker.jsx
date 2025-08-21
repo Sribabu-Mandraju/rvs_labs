@@ -19,7 +19,8 @@ import { FiRefreshCw } from "react-icons/fi";
 import * as XLSX from "xlsx";
 
 const DepositsTracker = ({ adminData }) => {
-  const [deposits, setDeposits] = useState([]);
+  const [deposits, setDeposits] = useState([]); // filtered view
+  const [rawDeposits, setRawDeposits] = useState([]); // unfiltered current page
   console.log("admin data in deposit tracker :", adminData);
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState({
@@ -37,39 +38,214 @@ const DepositsTracker = ({ adminData }) => {
     totalPages: 1,
     totalCount: 0,
     limit: 20,
+    hasNextPage: false,
+    latestTokenId: "0",
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch deposits with current filters
-  const fetchDeposits = async (page = 1) => {
+  // Local storage keys
+  const STORAGE_KEY = "depositsTracker:v1";
+  const getCacheKey = (page, limit) => `${STORAGE_KEY}:${limit}:${page}`;
+  const savePageToCache = (page, limit, payload) => {
+    try {
+      const record = { ...payload, cachedAt: Date.now(), page, limit };
+      localStorage.setItem(getCacheKey(page, limit), JSON.stringify(record));
+    } catch {}
+  };
+  const loadPageFromCache = (page, limit, maxAgeMs = 5 * 60 * 1000) => {
+    try {
+      const raw = localStorage.getItem(getCacheKey(page, limit));
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (
+        parsed &&
+        parsed.cachedAt &&
+        Date.now() - parsed.cachedAt <= maxAgeMs
+      ) {
+        return parsed;
+      }
+    } catch {}
+    return null;
+  };
+  const clearPageCache = (page, limit) => {
+    try {
+      localStorage.removeItem(getCacheKey(page, limit));
+    } catch {}
+  };
+
+  // Local helper: apply client-side filters to deposits
+  const applyFilters = (items) => {
+    try {
+      let result = Array.isArray(items) ? [...items] : [];
+
+      // Status filter
+      if (filters.status && filters.status !== "all") {
+        result = result.filter((d) => {
+          const now = Math.floor(Date.now() / 1000);
+          const isUnlocked = Number(d.unlockTimestamp) <= now;
+          if (filters.status === "locked") return !isUnlocked;
+          if (filters.status === "unlocked") return isUnlocked;
+          if (filters.status === "unclaimed_unlocked")
+            return isUnlocked && !d.isClaimed;
+          if (filters.status === "claimed") return Boolean(d.isClaimed);
+          return true;
+        });
+      }
+
+      // Date range filter
+      if (filters.dateRange && filters.dateRange !== "all") {
+        const startTs = (ts) => Number(ts) * 1000;
+        const now = Date.now();
+        let from = 0;
+        if (filters.dateRange === "today") {
+          const d = new Date();
+          d.setHours(0, 0, 0, 0);
+          from = d.getTime();
+        } else if (filters.dateRange === "week") {
+          from = now - 7 * 24 * 60 * 60 * 1000;
+        } else if (filters.dateRange === "month") {
+          from = now - 30 * 24 * 60 * 60 * 1000;
+        }
+        result = result.filter((d) => startTs(d.startTimestamp) >= from);
+      }
+
+      // Custom from/to date
+      if (filters.fromDate) {
+        const fromMs = new Date(filters.fromDate).getTime();
+        result = result.filter(
+          (d) => Number(d.startTimestamp) * 1000 >= fromMs
+        );
+      }
+      if (filters.toDate) {
+        const toMs = new Date(filters.toDate).getTime();
+        result = result.filter((d) => Number(d.startTimestamp) * 1000 <= toMs);
+      }
+
+      // Period filter
+      if (filters.periodMonths) {
+        result = result.filter(
+          (d) => String(d.periodMonths) === String(filters.periodMonths)
+        );
+      }
+
+      // Min/Max amount (interpreted in human units)
+      const getDecimalsFor = (tokenAddress, fallback) => {
+        try {
+          const info = adminData?.allowedTokensWithNames?.find(
+            (t) =>
+              t.address.toLowerCase() === String(tokenAddress).toLowerCase()
+          );
+          if (info) return Number(info.decimals);
+        } catch {}
+        return typeof fallback === "number" ? fallback : 18;
+      };
+      const toHuman = (raw, decimals) => {
+        try {
+          return Number(ethers.formatUnits(raw, decimals));
+        } catch {
+          return 0;
+        }
+      };
+      if (filters.minAmount) {
+        result = result.filter((d) => {
+          const dec = getDecimalsFor(d.depositToken, Number(d.decimals));
+          return toHuman(d.amount, dec) >= Number(filters.minAmount);
+        });
+      }
+      if (filters.maxAmount) {
+        result = result.filter((d) => {
+          const dec = getDecimalsFor(d.depositToken, Number(d.decimals));
+          return toHuman(d.amount, dec) <= Number(filters.maxAmount);
+        });
+      }
+
+      // Search term in address, tokenId, tx hash
+      if (filters.searchTerm) {
+        const q = String(filters.searchTerm).toLowerCase();
+        result = result.filter(
+          (d) =>
+            String(d.tokenId).toLowerCase().includes(q) ||
+            String(d.originalMinter).toLowerCase().includes(q) ||
+            String(d.transactionHash || "")
+              .toLowerCase()
+              .includes(q)
+        );
+      }
+
+      return result;
+    } catch {
+      return Array.isArray(items) ? items : [];
+    }
+  };
+
+  // Fetch deposits with current filters (server provides only page/limit)
+  const fetchDeposits = async (page = 1, { force = false } = {}) => {
     setIsLoading(true);
     try {
+      const limitNum = pagination.limit || 20;
+      if (!force) {
+        const cachedPage = loadPageFromCache(page, limitNum);
+        if (cachedPage && Array.isArray(cachedPage.deposits)) {
+          setRawDeposits(cachedPage.deposits);
+          setDeposits(applyFilters(cachedPage.deposits));
+          setPagination((prev) => ({
+            ...prev,
+            currentPage: Number(cachedPage.page) || page,
+            totalPages:
+              (Number(cachedPage.page) || page) +
+              (cachedPage.pagination?.hasNextPage ? 1 : 0),
+            totalCount: prev.totalCount || 0,
+            limit: Number(cachedPage.limit) || limitNum,
+            hasNextPage: Boolean(cachedPage.pagination?.hasNextPage),
+            latestTokenId: String(
+              cachedPage.pagination?.latestTokenId || prev.latestTokenId
+            ),
+          }));
+          return;
+        }
+      }
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: pagination.limit.toString(),
-        ...filters,
-      });
-
-      // Remove empty filters
-      Object.keys(params).forEach((key) => {
-        if (!params.get(key) || params.get(key) === "all") {
-          params.delete(key);
-        }
+        limit: limitNum.toString(),
       });
 
       const response = await fetch(
-        `https://locknft.onrender.com/deposits/?${params}`
+        `http://localhost:3000/lockTimeNFT/allDeposits?${params}`
       );
       const data = await response.json();
 
       if (data.success) {
-        setDeposits(data.deposits);
+        setRawDeposits(Array.isArray(data.deposits) ? data.deposits : []);
+        const filtered = applyFilters(data.deposits);
+        setDeposits(filtered);
         setPagination((prev) => ({
           ...prev,
-          currentPage: data.pagination.currentPage,
-          totalPages: data.pagination.totalPages,
-          totalCount: data.pagination.totalCount,
+          currentPage: Number(data.pagination.currentPage) || page,
+          totalPages:
+            Number(data.pagination.currentPage || page) +
+            (data.pagination.hasNextPage ? 1 : 0),
+          totalCount: prev.totalCount || 0,
+          limit: Number(data.pagination.limit) || prev.limit,
+          hasNextPage: Boolean(data.pagination.hasNextPage),
+          latestTokenId: String(
+            data.pagination.latestTokenId || prev.latestTokenId
+          ),
         }));
+
+        // Cache page-scoped
+        savePageToCache(
+          Number(data.pagination.currentPage) || page,
+          Number(data.pagination.limit) || limitNum,
+          {
+            deposits: Array.isArray(data.deposits) ? data.deposits : [],
+            pagination: {
+              hasNextPage: Boolean(data.pagination.hasNextPage),
+              latestTokenId: String(
+                data.pagination.latestTokenId || pagination.latestTokenId
+              ),
+            },
+          }
+        );
       } else {
         toast.error("Failed to fetch deposits");
       }
@@ -81,9 +257,41 @@ const DepositsTracker = ({ adminData }) => {
     }
   };
 
+  // On mount: use local cache unless reload
   useEffect(() => {
+    const nav = performance.getEntriesByType("navigation")[0];
+    const isReload = nav && nav.type === "reload";
+    try {
+      if (!isReload) {
+        const limitNum = pagination.limit || 20;
+        const cachedPage = loadPageFromCache(1, limitNum);
+        if (cachedPage && Array.isArray(cachedPage.deposits)) {
+          setRawDeposits(cachedPage.deposits);
+          setDeposits(applyFilters(cachedPage.deposits));
+          setPagination((prev) => ({
+            ...prev,
+            currentPage: 1,
+            limit: Number(cachedPage.limit) || limitNum,
+            hasNextPage: Boolean(cachedPage.pagination?.hasNextPage),
+            latestTokenId: String(
+              cachedPage.pagination?.latestTokenId || prev.latestTokenId
+            ),
+            totalPages: 1 + (cachedPage.pagination?.hasNextPage ? 1 : 0),
+          }));
+          return;
+        }
+      }
+    } catch {}
+    // No cache or reload -> fetch
     fetchDeposits(1);
-  }, [filters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Re-apply filters without fetching
+  useEffect(() => {
+    setDeposits(applyFilters(rawDeposits));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, rawDeposits]);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -129,21 +337,18 @@ const DepositsTracker = ({ adminData }) => {
     }
   };
 
-  const formatAmount = (amount, tokenAddress) => {
+  const formatAmount = (amount, tokenAddress, providedDecimals) => {
     try {
-      // Find the token in adminData to get proper decimals
-      const tokenInfo = adminData?.allowedTokensWithNames?.find(
-        (token) => token.address.toLowerCase() === tokenAddress?.toLowerCase()
-      );
-
-      // Use token decimals if found, otherwise default to 18
-      const decimals = tokenInfo ? parseInt(tokenInfo.decimals) : 18;
-
-      // Debug logging for decimal handling
-      if (tokenInfo) {
-        console.log(
-          `Formatting ${amount} for token ${tokenInfo.name} with ${decimals} decimals`
+      // Prefer decimals provided by API; fallback to adminData lookup
+      let decimals =
+        providedDecimals !== undefined && providedDecimals !== null
+          ? Number(providedDecimals)
+          : undefined;
+      if (decimals === undefined) {
+        const tokenInfo = adminData?.allowedTokensWithNames?.find(
+          (token) => token.address.toLowerCase() === tokenAddress?.toLowerCase()
         );
+        decimals = tokenInfo ? parseInt(tokenInfo.decimals) : 18;
       }
 
       return parseFloat(ethers.formatUnits(amount, decimals)).toFixed(2);
@@ -222,31 +427,29 @@ const DepositsTracker = ({ adminData }) => {
       // Show loading toast
       const loadingToast = toast.loading("Preparing Excel file...");
 
-      // Fetch all deposits without pagination for complete export
-      const params = new URLSearchParams({
-        limit: "1000", // Large limit to get all data
-        ...filters,
-      });
-
-      // Remove empty filters
-      Object.keys(params).forEach((key) => {
-        if (!params.get(key) || params.get(key) === "all") {
-          params.delete(key);
-        }
-      });
-
-      const response = await fetch(
-        `https://locknft.onrender.com/deposits/?${params}`
-      );
-      const data = await response.json();
-
-      if (!data.success) {
-        toast.dismiss(loadingToast);
-        toast.error("Failed to fetch data for export");
-        return;
+      // Fetch all pages and aggregate, then apply client-side filters
+      const aggregated = [];
+      let page = 1;
+      const limit = pagination.limit || 20;
+      // Safety cap to avoid infinite loops
+      const maxPages = 500;
+      // eslint-disable-next-line no-constant-condition
+      while (page <= maxPages) {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+        });
+        const res = await fetch(
+          `http://localhost:3000/lockTimeNFT/allDeposits?${params}`
+        );
+        const json = await res.json();
+        if (!json.success) break;
+        aggregated.push(...json.deposits);
+        if (!json.pagination?.hasNextPage) break;
+        page += 1;
       }
 
-      const allDeposits = data.deposits;
+      const allDeposits = applyFilters(aggregated);
 
       // Prepare data for Excel
       const excelData = allDeposits.map((deposit) => {
@@ -256,10 +459,14 @@ const DepositsTracker = ({ adminData }) => {
         return {
           "Token ID": deposit.tokenId || "N/A",
           "User Address": deposit.originalMinter || "N/A",
-          "Deposit Token": `${getTokenInfo(deposit.depositToken).name} (${
-            deposit.depositToken
-          })`,
-          Amount: formatAmount(deposit.amount, deposit.depositToken),
+          "Deposit Token": `${
+            deposit.tokenName || getTokenInfo(deposit.depositToken).name
+          } (${deposit.depositToken})`,
+          Amount: formatAmount(
+            deposit.amount,
+            deposit.depositToken,
+            deposit.decimals
+          ),
           "Period (Months)": deposit.periodMonths || "N/A",
           Status: statusBadge.text,
           "Start Date": formatDate(deposit.startTimestamp),
@@ -395,10 +602,14 @@ const DepositsTracker = ({ adminData }) => {
         return {
           "Token ID": deposit.tokenId || "N/A",
           "User Address": deposit.originalMinter || "N/A",
-          "Deposit Token": `${getTokenInfo(deposit.depositToken).name} (${
-            deposit.depositToken
-          })`,
-          Amount: formatAmount(deposit.amount, deposit.depositToken),
+          "Deposit Token": `${
+            deposit.tokenName || getTokenInfo(deposit.depositToken).name
+          } (${deposit.depositToken})`,
+          Amount: formatAmount(
+            deposit.amount,
+            deposit.depositToken,
+            deposit.decimals
+          ),
           "Period (Months)": deposit.periodMonths || "N/A",
           Status: statusBadge.text,
           "Start Date": formatDate(deposit.startTimestamp),
@@ -622,8 +833,11 @@ const DepositsTracker = ({ adminData }) => {
               <span>Filters</span>
             </button>
             <button
-              onClick={() => fetchDeposits(1)}
+              onClick={() =>
+                fetchDeposits(pagination.currentPage || 1, { force: true })
+              }
               className="flex items-center space-x-2 px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
+              title="Refetch latest data from server"
             >
               <FiRefreshCw />
               <span>Refresh</span>
@@ -870,9 +1084,14 @@ const DepositsTracker = ({ adminData }) => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-white font-medium">
-                            {formatAmount(deposit.amount, deposit.depositToken)}{" "}
+                            {formatAmount(
+                              deposit.amount,
+                              deposit.depositToken,
+                              deposit.decimals
+                            )}{" "}
                             <span className="text-gray-400 text-sm">
-                              {getTokenInfo(deposit.depositToken).name}
+                              {deposit.tokenName ||
+                                getTokenInfo(deposit.depositToken).name}
                             </span>
                           </div>
                         </td>
@@ -916,11 +1135,10 @@ const DepositsTracker = ({ adminData }) => {
                   <div className="text-sm text-gray-400">
                     Showing{" "}
                     {(pagination.currentPage - 1) * pagination.limit + 1} to{" "}
-                    {Math.min(
-                      pagination.currentPage * pagination.limit,
-                      pagination.totalCount
-                    )}{" "}
-                    of {pagination.totalCount} results
+                    {pagination.currentPage * pagination.limit}
+                    {pagination.totalCount > 0 && (
+                      <> of {pagination.totalCount} results</>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
