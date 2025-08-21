@@ -12,6 +12,7 @@ import {
   FaShieldAlt,
   FaBars,
   FaTimes,
+  FaPhone,
 } from "react-icons/fa";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -64,12 +65,12 @@ const Landing = () => {
       route: "/user-deposits",
       description: "View your deposit history",
     },
-    // {
-    //   title: "DEVELOPMENT",
-    //   icon: FaCode,
-    //   route: "/deposit",
-    //   description: "Custom development services",
-    // },
+    {
+      title: "Contact",
+      icon: FaPhone,
+      route: "/contact",
+      description: "Customer Care services are Available",
+    },
     // {
     //   title: "LICENSE KEYS",
     //   icon: FaKey,

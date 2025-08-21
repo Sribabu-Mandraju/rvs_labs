@@ -14,6 +14,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import AdminDashboard from "./pages/admin/AdminDashBoard";
 import UserDepositsDashboard from "./pages/UserDepositsPage";
 import Deposit from "./pages/Deposit";
+import ContactPage from "./pages/ContactPage";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -31,6 +32,7 @@ const App = () => {
           <Route path="/admin" element={<AdminDashboard />} />
           {/* <Route path="/depositPage" element={<Deposit />} /> */}
           <Route path="/*" element={<NotFoundPage />} />
+          <Route path="/contact" element={<ContactPage />} />
         </Routes>
       </Router>
       <ToastContainer
