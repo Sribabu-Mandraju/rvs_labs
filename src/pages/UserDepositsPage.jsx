@@ -92,7 +92,7 @@ const UserDepositsDashboard = () => {
     try {
       background ? setIsRefreshing(true) : setLoading(true);
       const response = await axios.get(
-        `https://locknft.onrender.com/lockTimeNFT/userDeposits?userWalletAddress=${address}`
+        `https://lock-nft.onrender.com/lockTimeNFT/userDeposits?userWalletAddress=${address}`
       );
       if (response.data.success) {
         const list = response.data.deposits || [];
@@ -459,7 +459,7 @@ const UserDepositsDashboard = () => {
                       </button>
                       <a
                         target="_blank"
-                        href={`https://locknft.onrender.com/lockTimeNFT/getTokenMetaData?tokenId=${deposit.tokenId}`}
+                        href={`https://lock-nft.onrender.com/lockTimeNFT/getTokenMetaData?tokenId=${deposit.tokenId}`}
                         className="flex-1 bg-gray-700 text-gray-200 font-medium py-2 rounded-lg hover:bg-gray-600 text-center transition-colors duration-300"
                       >
                         View Metadata
