@@ -210,7 +210,7 @@ const DepositsTracker = ({ adminData }) => {
       });
 
       const response = await fetch(
-        `http://localhost:3000/lockTimeNFT/allDeposits?${params}`
+        `https://locknft.onrender.com/lockTimeNFT/allDeposits?${params}`
       );
       const data = await response.json();
 
@@ -440,7 +440,7 @@ const DepositsTracker = ({ adminData }) => {
           limit: String(limit),
         });
         const res = await fetch(
-          `http://localhost:3000/lockTimeNFT/allDeposits?${params}`
+          `https://locknft.onrender.com/lockTimeNFT/allDeposits?${params}`
         );
         const json = await res.json();
         if (!json.success) break;

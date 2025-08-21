@@ -143,7 +143,7 @@ const createDepositRecord = async (
     );
 
     const response = await axios.post(
-      "http://localhost:3000/deposits",
+      "https://locknft.onrender.com/deposits",
       {
         proposalId,
         transactionHash,
