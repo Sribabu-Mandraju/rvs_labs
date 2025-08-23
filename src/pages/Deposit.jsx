@@ -109,7 +109,7 @@ function Deposit() {
     const fetchMetaData = async () => {
       try {
         const response = await axios.get(
-          "https://lock-nft.onrender.com/lockTimeNFT/publicMetaData"
+          "https://timelocknft.onrender.com/lockTimeNFT/publicMetaData"
         );
         if (response.data.success) {
           setPublicMetaData(response.data);

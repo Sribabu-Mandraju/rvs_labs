@@ -14,7 +14,7 @@ import IERC20ABI from "../abis/ierc20.json";
 import { useNavigate } from "react-router-dom";
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_STABLEZ_CONTRACT;
-const USDT_API_URL = "https://lock-nft.onrender.com/market/usdt";
+const USDT_API_URL = "https://timelocknft.onrender.com/market/usdt";
 
 const DepositPage = () => {
   const navigate = useNavigate();
